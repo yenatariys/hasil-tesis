@@ -252,16 +252,60 @@ def playstore_specific_insights(df: pd.DataFrame) -> None:
     )
     st.plotly_chart(scatter_fig, use_container_width=True)
 
-    heatmap = px.density_heatmap(
-        play_df,
-        x="rating_score",
-        y="lexicon_to_rating",
-        nbinsx=5,
-        nbinsy=5,
-        color_continuous_scale="Blues",
-        title="Rating Consistency Heatmap",
-    )
-    st.plotly_chart(heatmap, use_container_width=True)
+    # Create a clearer, discrete 5x5 heatmap showing counts and percentages
+    try:
+        # Ensure scores are integer-like for discrete bins
+        actual = play_df["rating_score"].round().astype(int)
+        lexicon = play_df["lexicon_to_rating"].round().astype(int)
+
+        # Build pivot table of counts (actual rating rows, lexicon rating columns)
+        pivot = pd.crosstab(actual, lexicon).reindex(index=range(1, 6), columns=range(1, 6), fill_value=0)
+
+        # Absolute counts heatmap
+        fig_counts = px.imshow(
+            pivot.values,
+            x=pivot.columns.astype(str),
+            y=pivot.index.astype(str),
+            text_auto=True,
+            color_continuous_scale="Blues",
+            labels={"x": "Lexicon-derived Rating", "y": "Original Rating"},
+            title="Rating Consistency — Counts (Original vs Lexicon)",
+        )
+        fig_counts.update_layout(xaxis_title="Lexicon-derived Rating", yaxis_title="Original Rating")
+        fig_counts.update_traces(texttemplate="%{text}", textfont_size=14)
+
+        # Percentage heatmap (percent of rows for each original rating)
+        percent = pivot.div(pivot.sum(axis=1).replace(0, 1), axis=0) * 100
+        fig_pct = px.imshow(
+            percent.values,
+            x=percent.columns.astype(str),
+            y=percent.index.astype(str),
+            text_auto=True,
+            color_continuous_scale="Viridis",
+            labels={"x": "Lexicon-derived Rating", "y": "Original Rating"},
+            title="Rating Consistency — % within Original Rating (rows sum to 100% per Original Rating)",
+        )
+        fig_pct.update_layout(xaxis_title="Lexicon-derived Rating", yaxis_title="Original Rating")
+        # Format percent labels
+        # text_auto shows rounded numbers; we convert to strings with 1 decimal for clarity
+        percent_text = percent.round(1).astype(str) + "%"
+        fig_pct.data[0].text = percent_text.values
+        fig_pct.update_traces(texttemplate="%{text}", textfont_size=12)
+
+        st.plotly_chart(fig_counts, use_container_width=True)
+        st.plotly_chart(fig_pct, use_container_width=True)
+    except Exception:
+        # Fallback to the original density heatmap if something goes wrong
+        heatmap = px.density_heatmap(
+            play_df,
+            x="rating_score",
+            y="lexicon_to_rating",
+            nbinsx=5,
+            nbinsy=5,
+            color_continuous_scale="Blues",
+            title="Rating Consistency Heatmap",
+        )
+        st.plotly_chart(heatmap, use_container_width=True)
 
 
 def preprocessing_explorer(df: pd.DataFrame) -> None:

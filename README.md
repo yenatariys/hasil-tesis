@@ -27,7 +27,13 @@ pip install pandas numpy streamlit plotly scikit-learn matplotlib wordcloud nltk
 3. Run the dashboard on port 8502:
 
 ```powershell
+# Option A: simple run
 streamlit run dashboard.py --server.port 8502
+
+# Option B: recommended — enables auto-reload on save (if your Streamlit version supports runOnSave)
+# Using the project config (.streamlit/config.toml) the app will auto-reload when files are saved.
+.\n+# Or use the included helper script which will activate a local venv if present:
+.\run_dashboard.ps1
 ```
 
 Open http://localhost:8502 in your browser.
