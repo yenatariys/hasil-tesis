@@ -472,9 +472,11 @@ def rating_distribution(df: pd.DataFrame) -> None:
     )
     summary["percentage"] = summary["percentage"].round(1)
     summary["annotation"] = summary.apply(
-        lambda row: f"{int(row['review_count'])} reviews ({row['percentage']:.1f}%)"
-        if not pd.isna(row["percentage"])
-        else f"{int(row['review_count'])} reviews",
+        lambda row: (
+            f"Rating {int(row['rating_score'])}: {int(row['review_count'])} reviews ({row['percentage']:.1f}%)"
+            if not pd.isna(row["percentage"])
+            else f"Rating {int(row['rating_score'])}: {int(row['review_count'])} reviews"
+        ),
         axis=1,
     )
 
