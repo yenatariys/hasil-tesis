@@ -134,7 +134,9 @@ def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
     mask &= df["rating_score"].between(*selected_ratings)
 
     start_date, end_date = selected_range
-    mask &= df["review_date"].between(pd.to_datetime(start_date), pd.to_datetime(end_date))
+    # Compare date-only values to avoid mismatches when some rows include time components
+    # Convert the series to date and compare inclusively
+    mask &= df["review_date"].dt.date.between(start_date, end_date)
 
     if keyword:
         keyword_lower = keyword.lower()
@@ -596,10 +598,27 @@ def model_performance_section(df: pd.DataFrame) -> None:
 
 def _parse_review_dates(series: pd.Series) -> pd.Series:
     """Parse date strings that may mix date-only and timestamp formats."""
-    try:
-        return pd.to_datetime(series, format="mixed", errors="coerce")
-    except TypeError:
-        return pd.to_datetime(series, errors="coerce", infer_datetime_format=True)
+    # Robust per-value parsing: try common formats first to avoid mixed-format inference issues
+    def _parse_val(v):
+        if pd.isna(v):
+            return pd.NaT
+        # If already a datetime object, return as-is
+        if isinstance(v, (pd.Timestamp,)):
+            return v
+        s = str(v).strip()
+        # Try ISO date-only
+        for fmt in ("%Y-%m-%d", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+            try:
+                return pd.to_datetime(s, format=fmt)
+            except (ValueError, TypeError):
+                continue
+        # Fallback to pandas flexible parser
+        try:
+            return pd.to_datetime(s, errors="coerce")
+        except Exception:
+            return pd.NaT
+
+    return series.apply(_parse_val)
 
 
 def main() -> None:
