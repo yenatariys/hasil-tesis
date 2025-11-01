@@ -528,6 +528,170 @@ def model_performance_section(df: pd.DataFrame) -> None:
         st.session_state.pop("bert_results_config", None)
         st.session_state["model_data_signature"] = data_signature
 
+    # Allow importing precomputed results exported from the notebooks
+    with st.expander("Import precomputed model results (JSON)", expanded=False):
+        st.write(
+            "Upload JSON files exported from the notebooks containing precomputed CV / report results to avoid retraining heavy models."
+        )
+        tfidf_file = st.file_uploader("TF-IDF results (JSON)", type=["json"], key="upload_tfidf")
+        bert_file = st.file_uploader("IndoBERT results (JSON)", type=["json"], key="upload_bert")
+        prefer_import = st.checkbox("Prefer imported results over retraining when present", value=True)
+
+        import json
+        # Parse uploads into preview objects first, show a small preview and require explicit load
+        tfidf_preview = None
+        bert_preview = None
+
+        if tfidf_file is not None:
+            try:
+                tfidf_preview = json.load(tfidf_file)
+            except Exception as exc:  # noqa: BLE001
+                st.error(f"Failed to parse TF-IDF JSON: {exc}")
+
+        if bert_file is not None:
+            try:
+                bert_preview = json.load(bert_file)
+            except Exception as exc:  # noqa: BLE001
+                st.error(f"Failed to parse IndoBERT JSON: {exc}")
+
+        # Also detect any exported JSONs already present in the workspace and offer quick load
+        try:
+            from pathlib import Path
+
+            repo_dir = Path(__file__).resolve().parent
+            workspace_candidates = sorted(repo_dir.glob("exported_model_results_*.json"))
+        except Exception:
+            workspace_candidates = []
+
+        if workspace_candidates:
+            st.markdown("**Workspace: detected exported JSON files**")
+            for p in workspace_candidates:
+                cols = st.columns([3, 1, 1])
+                cols[0].write(p.name)
+                if cols[1].button("Preview", key=f"preview_ws_{p.name}"):
+                    try:
+                        with open(p, "r", encoding="utf-8") as fh:
+                            content = json.load(fh)
+                        st.json(content)
+                    except Exception as exc:  # noqa: BLE001
+                        st.error(f"Failed to read {p.name}: {exc}")
+
+                if cols[2].button("Load into dashboard", key=f"load_ws_{p.name}"):
+                    try:
+                        with open(p, "r", encoding="utf-8") as fh:
+                            content = json.load(fh)
+
+                        # Normalize known notebook export shapes into the dashboard-friendly schema
+                        def _normalize_export(obj: dict) -> dict:
+                            # If already in dashboard shape, return as-is
+                            if isinstance(obj, dict) and ("best_score" in obj or "classification_report" in obj):
+                                return obj
+
+                            normalized: Dict[str, Any] = {}
+                            # Some notebooks write results under a 'grid' key
+                            grid = obj.get("grid") if isinstance(obj, dict) else None
+                            if isinstance(grid, dict):
+                                # Pull top-level best_score / best_params when present
+                                if "best_score" in grid:
+                                    normalized["best_score"] = grid.get("best_score")
+                                if "best_params" in grid:
+                                    normalized["best_params"] = grid.get("best_params")
+
+                                # Try to build pandas DataFrame from cv_results if available
+                                cv = grid.get("cv_results")
+                                try:
+                                    import pandas as _pd
+
+                                    if isinstance(cv, dict):
+                                        cv_df = _pd.DataFrame(cv)
+                                        # TF-IDF style: param_tfidf__ngram_range -> ngram_summary
+                                        if "param_tfidf__ngram_range" in cv_df.columns:
+                                            ngram_summary = (
+                                                cv_df.groupby(cv_df["param_tfidf__ngram_range"].astype(str))["mean_test_score"]
+                                                .max()
+                                                .reset_index()
+                                                .rename(columns={"param_tfidf__ngram_range": "ngram", "mean_test_score": "f1_macro"})
+                                            )
+                                            normalized["ngram_summary"] = ngram_summary
+
+                                        # C search style (common for SVM grids)
+                                        if "param_C" in cv_df.columns:
+                                            c_search = cv_df[["param_C", "mean_test_score"]].rename(
+                                                columns={"param_C": "C", "mean_test_score": "f1_macro"}
+                                            )
+                                            normalized["c_search"] = c_search
+
+                                        # If kernel/grid-level params exist, keep the raw cv_results for inspection
+                                        normalized.setdefault("cv_results", cv)
+                                except Exception:
+                                    # If pandas not available or conversion fails, skip DataFrame creation
+                                    normalized.setdefault("cv_results", cv)
+
+                            # Bring through any explicit evaluation artifacts if present
+                            if isinstance(obj, dict):
+                                if "classification_report" in obj:
+                                    normalized["classification_report"] = obj.get("classification_report")
+                                if "confusion_matrix" in obj:
+                                    normalized["confusion_matrix"] = obj.get("confusion_matrix")
+
+                            return normalized if normalized else obj
+
+                        norm = _normalize_export(content)
+
+                        # Heuristics to decide which slot to fill
+                        assigned = False
+                        if isinstance(norm, dict):
+                            if "ngram_summary" in norm or (isinstance(norm.get("best_params"), dict) and any(k.startswith("tfidf") or "ngram" in str(k).lower() for k in norm.get("best_params", {}).keys())):
+                                st.session_state["tfidf_results"] = norm
+                                st.success(f"Loaded {p.name} as TF-IDF results.")
+                                assigned = True
+                            elif "c_search" in norm and isinstance(norm.get("best_params"), dict) and norm.get("best_params").get("model_name"):
+                                st.session_state["bert_results"] = norm
+                                st.session_state["bert_results_config"] = norm.get("best_params", None)
+                                st.success(f"Loaded {p.name} as IndoBERT results.")
+                                assigned = True
+                            elif "c_search" in norm or (isinstance(norm.get("cv_results"), dict) and any(col.startswith("param_kernel") or col == "param_kernel" for col in (list(norm.get("cv_results", {}).keys()) if isinstance(norm.get("cv_results", {}), dict) else []))):
+                                # Likely an SVM grid (kernel/C) — map to TF-IDF slot as a pragmatic default
+                                st.session_state["tfidf_results"] = norm
+                                st.success(f"Loaded {p.name} into TF-IDF slot (SVM/grid heuristic).")
+                                assigned = True
+
+                        if not assigned:
+                            # Fallback: load into TF-IDF slot but inform the user
+                            st.session_state["tfidf_results"] = norm
+                            st.info(f"Loaded {p.name} into TF-IDF slot (fallback). Use retrain buttons to recompute if needed.")
+
+                    except Exception as exc:  # noqa: BLE001
+                        st.error(f"Failed to load {p.name}: {exc}")
+
+        # Show previews and explicit load buttons for uploaded files
+        if tfidf_preview is not None:
+            st.markdown("**TF-IDF JSON preview**")
+            try:
+                st.json(tfidf_preview)
+            except Exception:
+                st.write(tfidf_preview)
+            if st.button("Load TF-IDF results into dashboard", key="load_tfidf"):
+                if isinstance(tfidf_preview, dict) and "best_score" in tfidf_preview:
+                    st.session_state["tfidf_results"] = tfidf_preview
+                    st.success("TF-IDF results loaded into session.")
+                else:
+                    st.error("Invalid TF-IDF JSON structure: expected a dict with 'best_score'.")
+
+        if bert_preview is not None:
+            st.markdown("**IndoBERT JSON preview**")
+            try:
+                st.json(bert_preview)
+            except Exception:
+                st.write(bert_preview)
+            if st.button("Load IndoBERT results into dashboard", key="load_bert"):
+                if isinstance(bert_preview, dict) and "best_score" in bert_preview:
+                    st.session_state["bert_results"] = bert_preview
+                    st.session_state["bert_results_config"] = bert_preview.get("best_params", None)
+                    st.success("IndoBERT results loaded into session.")
+                else:
+                    st.error("Invalid IndoBERT JSON structure: expected a dict with 'best_score'.")
+
     tfidf_tab, bert_tab = st.tabs(["SVM + TF-IDF", "SVM + IndoBERT"])
 
     with tfidf_tab:

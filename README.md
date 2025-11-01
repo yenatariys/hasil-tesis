@@ -1,3 +1,65 @@
+# Disney+ Hotstar Reviews — Dashboard & Notebooks
+
+This repository contains lexicon‑labeled App Store and Play Store reviews for Disney+ Hotstar plus a Streamlit dashboard to explore preprocessing, sentiment labels, and model evaluation results.
+
+Files of interest
+- `dashboard.py` — Streamlit app that loads the CSVs, lets you filter by platform/date/sentiment, inspects preprocessing steps, and compares model results (SVM + TF‑IDF and SVM + IndoBERT).
+- `lex_labeled_review_app.csv`, `lex_labeled_review_play.csv` — source datasets.
+- `Tesis_Appstore_FIX.ipynb`, `Tesis_Playstore_FIX.ipynb` — notebooks used to preprocess and train models. They include helper cells to export results as JSON.
+- `exported_model_results_app.json`, `exported_model_results_play.json` — sample notebook-exported models (if present in the repo).
+
+Quick start (Windows PowerShell)
+
+1. Create and activate a virtual environment (recommended):
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+2. Install required packages (minimal; adjust as needed):
+
+```powershell
+pip install pandas numpy streamlit plotly scikit-learn matplotlib wordcloud nltk sastrawi
+# Optional (heavy): transformers torch
+```
+
+3. Run the dashboard on port 8502:
+
+```powershell
+streamlit run dashboard.py --server.port 8502
+```
+
+Open http://localhost:8502 in your browser.
+
+Notes on dependencies
+- Light / interactive features: `pandas`, `streamlit`, `plotly`, `scikit-learn`, `matplotlib`, `wordcloud`, `nltk`, `sastrawi`.
+- IndoBERT embeddings require `transformers` and `torch` (large installs and GPU recommended). The dashboard guards IndoBERT features and will show a warning if these packages are not installed.
+
+Using exported notebook results (recommended for speed)
+- The notebooks include cells that export model search/evaluation results to JSON files named `exported_model_results_app.json` and `exported_model_results_play.json`.
+- Place such JSON files in the same directory as `dashboard.py` (the app will auto-detect files matching `exported_model_results_*.json`).
+- In the dashboard go to "Model Performance Comparison" → Expand "Import precomputed model results (JSON)". Detected workspace JSONs will be listed with Preview and Load buttons. Loading places the precomputed results into the TF‑IDF or IndoBERT model slots (heuristics used; you can retrain in-app to override).
+
+How the dashboard handles heavy models
+- TF‑IDF + Linear SVM is reasonably fast and can be run inside the dashboard.
+- IndoBERT embedding + SVM is heavy: use the notebook in Colab to run embeddings/GridSearchCV, export results to JSON, then load into the dashboard to visualize results without recomputing.
+
+Notebook export helper (Colab)
+- The notebooks include a Colab helper cell that mounts Google Drive, copies the exported JSON(s) to Drive, and triggers downloads. Run that cell in Colab after training to copy results locally.
+
+Troubleshooting
+- Port conflict: If port 8502 is already in use, pick a different port using `--server.port <PORT>`.
+- If the dashboard warns about missing IndoBERT dependencies, install `transformers` and `torch`, or produce the JSON from the notebook and load it instead.
+
+Next steps you might want
+- Auto-load workspace JSONs on app start (opt-in) — the dashboard already detects workspace JSONs and offers preview/load.
+- Synchronize model hyperparameter defaults in `dashboard.py` with the notebook experiments — I can update those if you want.
+
+If you'd like, I can also add a `requirements.txt` or a small PowerShell script to create the venv and install packages automatically.
+
+---
+Generated on 2025-11-01 — created to make running and reproducing the dashboard easier.
 # Disney+ Hotstar Sentiment Dashboard
 
 Interactive Streamlit dashboard for exploring lexicon-based sentiment analysis of Disney+ Hotstar reviews collected from the App Store and Play Store. The app also exposes the Natural Language Processing (NLP) pipeline steps and lets you benchmark SVM classifiers trained on TF-IDF features as well as IndoBERT embeddings.
