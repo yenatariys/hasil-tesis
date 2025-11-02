@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import ast
 import json
+import re
+import string
 from pathlib import Path
 from datetime import date, timedelta
 from typing import Any, Dict, Iterable, List, Optional, Tuple
@@ -22,6 +24,25 @@ try:  # Optional dependency for loading persisted scikit-learn pipelines
 except ImportError:  # pragma: no cover - handled gracefully in UI
     joblib = None
 
+try:  # Optional translator for preprocessing playground
+    from googletrans import Translator as _GoogleTranslator  # type: ignore
+except ImportError:  # pragma: no cover - translator optional
+    _GoogleTranslator = None
+
+try:  # Optional NLP utilities
+    import nltk
+    from nltk.corpus import stopwords as _nltk_stopwords
+    from nltk.tokenize import word_tokenize as _word_tokenize
+except ImportError:  # pragma: no cover
+    nltk = None
+    _nltk_stopwords = None
+    _word_tokenize = None
+
+try:  # Optional Indonesian stemmer
+    from Sastrawi.Stemmer.StemmerFactory import StemmerFactory  # type: ignore
+except ImportError:  # pragma: no cover
+    StemmerFactory = None
+
 try:  # Optional heavy dependencies for transformer-based embeddings
     import torch
     from transformers import AutoModel, AutoTokenizer
@@ -34,6 +55,11 @@ try:  # Optional WordCloud dependency
 except ImportError:  # pragma: no cover - handled gracefully in UI
     WordCloud = None
     STOPWORDS = set()
+
+# Caches for optional resources shared across helpers
+_LEXICON_CACHE: Optional[Dict[str, Any]] = None
+_SIMULATED_STOPWORDS: Optional[set[str]] = None
+_SIMULATED_STEMMER: Any = None
 
 st.set_page_config(
     page_title="Sentiment & Pre-processing Dashboard",
@@ -129,6 +155,87 @@ def _label_saved_pipeline(path: Path) -> str:
     return label if label else path.name
 
 
+def _format_result_label(slot: str, source_name: str) -> str:
+    base = Path(source_name).stem if Path(source_name).suffix else source_name
+    descriptor = base.replace("_", " ")
+    slot_prefix = "TF-IDF" if slot == "tfidf" else "IndoBERT"
+
+    lowered = base.lower()
+    if "app" in lowered:
+        suffix = "App Store"
+    elif "play" in lowered:
+        suffix = "Play Store"
+    else:
+        suffix = descriptor
+
+    return f"{slot_prefix} | {suffix}"
+
+
+def _get_results_repository(slot: str) -> Dict[str, Dict[str, Any]]:
+    key = f"{slot}_results_repository"
+    repo = st.session_state.get(key)
+    if not isinstance(repo, dict):
+        repo = {}
+    st.session_state[key] = repo
+    return repo
+
+
+def _store_loaded_result(slot: str, label: str, payload: Dict[str, Any]) -> None:
+    repo = _get_results_repository(slot).copy()
+    final_label = label
+    if final_label not in repo:
+        counter = 2
+        while final_label in repo:
+            final_label = f"{label} ({counter})"
+            counter += 1
+    repo[final_label] = payload
+    st.session_state[f"{slot}_results_repository"] = repo
+    st.session_state[f"{slot}_results_loaded"] = payload
+    st.session_state[f"{slot}_results"] = payload
+    st.session_state[f"{slot}_loaded_label"] = final_label
+    st.session_state[f"{slot}_active_source"] = "loaded"
+    st.session_state[f"{slot}_selected_loaded_label"] = final_label
+    if slot == "bert":
+        st.session_state["bert_loaded_config"] = payload.get("best_params")
+
+
+def _infer_pipeline_slot(name: str, pipeline: Any | None = None) -> str:
+    lowered = name.lower()
+    if any(token in lowered for token in ("tfidf", "tf-idf", "tf_idf")):
+        return "tfidf"
+    if "bert" in lowered:
+        return "bert"
+
+    if pipeline is not None and hasattr(pipeline, "named_steps"):
+        try:
+            step_names = [str(step).lower() for step in pipeline.named_steps.keys()]
+            if any("tfidf" in step for step in step_names):
+                return "tfidf"
+            if any("bert" in step or "transformer" in step for step in step_names):
+                return "bert"
+        except Exception:  # pragma: no cover - best effort classification
+            pass
+
+    return "unknown"
+
+
+def _get_pipeline_registry() -> Dict[str, Dict[str, Any]]:
+    registry = st.session_state.get("uploaded_pipelines")
+    if not isinstance(registry, dict):
+        registry = {}
+
+    # Backward compatibility: previously stored as {name: pipeline}
+    if registry and any(not isinstance(value, dict) for value in registry.values()):
+        registry = {"unknown": registry}
+
+    for slot in ("tfidf", "bert", "unknown"):
+        if slot not in registry or not isinstance(registry[slot], dict):
+            registry[slot] = {}
+
+    st.session_state["uploaded_pipelines"] = registry
+    return registry
+
+
 def _classify_result_slot(content: Dict[str, Any]) -> str:
     best_params = None
     if isinstance(content, dict):
@@ -185,7 +292,9 @@ def _autoload_workspace_models() -> None:
         return
 
     loaded_any = False
-    notes: List[str] = []
+
+    repo_tfidf = _get_results_repository("tfidf")
+    repo_bert = _get_results_repository("bert")
 
     for path in _discover_exported_jsons():
         try:
@@ -197,38 +306,43 @@ def _autoload_workspace_models() -> None:
         normalized = _normalize_loaded_results(content if isinstance(content, dict) else {})
         slot = _classify_result_slot(normalized)
 
-        if slot == "tfidf" and "tfidf_results_loaded" not in st.session_state:
-            st.session_state["tfidf_results_loaded"] = normalized
-            st.session_state["tfidf_results"] = normalized
-            st.session_state["tfidf_loaded_label"] = f"Imported from {path.name}"
-            st.session_state["tfidf_active_source"] = "loaded"
-            loaded_any = True
-            notes.append(f"Loaded TF-IDF results from {path.name}")
-        elif slot == "bert" and "bert_results_loaded" not in st.session_state:
-            st.session_state["bert_results_loaded"] = normalized
-            st.session_state["bert_results"] = normalized
-            st.session_state["bert_loaded_label"] = f"Imported from {path.name}"
-            st.session_state["bert_loaded_config"] = normalized.get("best_params")
-            st.session_state["bert_active_source"] = "loaded"
-            loaded_any = True
-            notes.append(f"Loaded IndoBERT results from {path.name}")
+        if slot == "tfidf":
+            if "tfidf_results_loaded" not in st.session_state:
+                label = _format_result_label("tfidf", path.name)
+                _store_loaded_result("tfidf", label, normalized)
+                loaded_any = True
+            elif not repo_tfidf:
+                label = st.session_state.get("tfidf_loaded_label") or _format_result_label("tfidf", path.name)
+                repo_tfidf[label] = st.session_state.get("tfidf_results_loaded", normalized)
+                st.session_state["tfidf_results_repository"] = repo_tfidf
+        elif slot == "bert":
+            if "bert_results_loaded" not in st.session_state:
+                label = _format_result_label("bert", path.name)
+                _store_loaded_result("bert", label, normalized)
+                st.session_state["bert_loaded_config"] = normalized.get("best_params")
+                loaded_any = True
+            elif not repo_bert:
+                label = st.session_state.get("bert_loaded_label") or _format_result_label("bert", path.name)
+                repo_bert[label] = st.session_state.get("bert_results_loaded", normalized)
+                st.session_state["bert_results_repository"] = repo_bert
 
     if joblib is not None:
-        pipelines = st.session_state.setdefault("uploaded_pipelines", {})
+        registry = _get_pipeline_registry()
         for path in _discover_saved_pipelines():
             label = _label_saved_pipeline(path)
-            if label in pipelines:
+            if any(label in bucket for bucket in registry.values()):
                 continue
             try:
-                pipelines[label] = joblib.load(path)
+                pipeline_obj = joblib.load(path)
+                slot = _infer_pipeline_slot(path.name, pipeline_obj)
+                registry[slot][label] = pipeline_obj
+                st.session_state["uploaded_pipelines"] = registry
                 loaded_any = True
-                notes.append(f"Loaded pipeline `{label}` from {path.name}")
             except Exception:  # noqa: BLE001
                 continue
 
     if loaded_any:
         st.session_state["_workspace_models_loaded"] = True
-        st.session_state["_workspace_models_loaded_notes"] = notes
 
 
 
@@ -309,34 +423,23 @@ def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
         rating_min = int(df["rating_score"].min())
         rating_max = int(df["rating_score"].max())
 
-        if "platform_filter" not in st.session_state:
-            st.session_state["platform_filter"] = platform_choices
-        if "sentiment_filter" not in st.session_state:
-            st.session_state["sentiment_filter"] = sentiment_choices
-        if "date_filter" not in st.session_state:
-            st.session_state["date_filter"] = (min_date, max_date)
-        if "rating_filter" not in st.session_state:
-            st.session_state["rating_filter"] = (rating_min, rating_max)
-        if "keyword_filter" not in st.session_state:
-            st.session_state["keyword_filter"] = ""
-
         selected_platforms = st.multiselect(
             "Platform",
             platform_choices,
-            default=st.session_state["platform_filter"],
+            default=platform_choices,
             key="platform_filter",
         )
 
         selected_sentiments = st.multiselect(
             "Sentiment",
             sentiment_choices,
-            default=st.session_state["sentiment_filter"],
+            default=sentiment_choices,
             key="sentiment_filter",
         )
 
         selected_range = st.date_input(
             "Review Date Range",
-            value=st.session_state["date_filter"],
+            value=(min_date, max_date),
             min_value=min_date,
             max_value=max_date,
             key="date_filter",
@@ -346,13 +449,12 @@ def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
             "Rating",
             min_value=rating_min,
             max_value=rating_max,
-            value=st.session_state["rating_filter"],
+            value=(rating_min, rating_max),
             key="rating_filter",
         )
 
         keyword = st.text_input(
             "Keyword search",
-            value=st.session_state["keyword_filter"],
             help="Filter reviews containing specific words.",
             key="keyword_filter",
         )
@@ -408,12 +510,15 @@ def sentiment_distribution(df: pd.DataFrame) -> None:
         (sentiment_summary["review_count"] / sentiment_summary["platform_total"]) * 100,
         np.nan,
     )
-    sentiment_summary["percentage"] = sentiment_summary["percentage"].round(1)
+    sentiment_summary["percentage"] = sentiment_summary["percentage"].round(0)
 
-    sentiment_summary["annotation"] = sentiment_summary.apply(
-        lambda row: f"{int(row['review_count'])} reviews ({row['percentage']:.1f}%)" if not pd.isna(row["percentage"]) else f"{int(row['review_count'])} reviews",
-        axis=1,
-    )
+    def _format_sentiment_annotation(row: pd.Series) -> str:
+        if pd.isna(row["percentage"]):
+            return f"{int(row['review_count'])} reviews"
+        rounded_pct = int(round(float(row["percentage"])))
+        return f"{int(row['review_count'])} reviews<br>{rounded_pct}%"
+
+    sentiment_summary["annotation"] = sentiment_summary.apply(_format_sentiment_annotation, axis=1)
 
     fig = px.bar(
         sentiment_summary,
@@ -445,15 +550,74 @@ def sentiment_timeline(df: pd.DataFrame) -> None:
         .size()
         .reset_index(name="review_count")
     )
-    fig = px.line(
-        monthly,
-        x="review_date",
-        y="review_count",
-        color="sentiment_label",
-        title="Monthly Sentiment Trend",
-        markers=True,
+
+    def _label_period(timestamp: pd.Timestamp) -> Optional[str]:
+        if pd.isna(timestamp):
+            return None
+        year = timestamp.year
+        if 2020 <= year <= 2022:
+            return "2020-2022"
+        if 2023 <= year <= 2025:
+            return "2023-2025"
+        return None
+
+    period_df = df.dropna(subset=["review_date"]).copy()
+    period_df["period_bucket"] = period_df["review_date"].apply(_label_period)
+    period_df = period_df.dropna(subset=["period_bucket"])
+    period_summary = (
+        period_df.groupby(["period_bucket", "sentiment_label"], as_index=False)
+        .size()
+        .rename(columns={"size": "review_count"})
     )
-    st.plotly_chart(fig, use_container_width=True)
+
+    if not period_summary.empty:
+        period_summary["period_total"] = period_summary.groupby("period_bucket")["review_count"].transform("sum")
+        period_summary["percentage"] = np.where(
+            period_summary["period_total"] > 0,
+            (period_summary["review_count"] / period_summary["period_total"]) * 100,
+            np.nan,
+        )
+        period_summary["percentage"] = period_summary["percentage"].round(1)
+
+        def _format_period_text(row: pd.Series) -> str:
+            if pd.isna(row["percentage"]):
+                return f"{int(row['review_count'])} reviews"
+            rounded_pct = int(round(float(row["percentage"])))
+            return f"{int(row['review_count'])} reviews ({rounded_pct}%)"
+
+        period_summary["annotation"] = period_summary.apply(_format_period_text, axis=1)
+
+    tab_monthly, tab_periodic = st.tabs(["Monthly trend", "Period comparison"])
+
+    with tab_monthly:
+        fig = px.line(
+            monthly,
+            x="review_date",
+            y="review_count",
+            color="sentiment_label",
+            title="Monthly Sentiment Trend",
+            markers=True,
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+    with tab_periodic:
+        if period_summary.empty:
+            st.info("No reviews fall within the defined 2020-2022 or 2023-2025 periods.")
+        else:
+            fig_period = px.bar(
+                period_summary,
+                x="period_bucket",
+                y="review_count",
+                color="sentiment_label",
+                barmode="stack",
+                title="Sentiment Comparison by Period",
+                category_orders={"period_bucket": ["2020-2022", "2023-2025"]},
+                hover_data={"review_count": True, "percentage": True},
+                text="annotation",
+            )
+            fig_period.update_traces(texttemplate="%{text}", textposition="inside", textfont_size=12)
+            fig_period.update_layout(xaxis_title="Period", yaxis_title="Number of Reviews", legend_title_text="Sentiment")
+            st.plotly_chart(fig_period, use_container_width=True)
 
 
 def rating_distribution(df: pd.DataFrame) -> None:
@@ -471,14 +635,6 @@ def rating_distribution(df: pd.DataFrame) -> None:
         np.nan,
     )
     summary["percentage"] = summary["percentage"].round(1)
-    summary["annotation"] = summary.apply(
-        lambda row: (
-            f"Rating {int(row['rating_score'])}: {int(row['review_count'])} reviews ({row['percentage']:.1f}%)"
-            if not pd.isna(row["percentage"])
-            else f"Rating {int(row['rating_score'])}: {int(row['review_count'])} reviews"
-        ),
-        axis=1,
-    )
 
     fig = px.bar(
         summary,
@@ -489,10 +645,8 @@ def rating_distribution(df: pd.DataFrame) -> None:
         category_orders={"rating_score": category_levels},
         labels={"rating_score": "Rating", "review_count": "Number of Reviews"},
         title="Rating Breakdown by Platform",
-        text="annotation",
         hover_data={"review_count": True, "percentage": True},
     )
-    fig.update_traces(texttemplate="%{text}", textposition="outside", textfont_size=11, cliponaxis=False)
     fig.update_layout(legend_title_text="Platform", uniformtext_minsize=10, uniformtext_mode="hide")
     fig.update_xaxes(type="category")
     st.plotly_chart(fig, use_container_width=True)
@@ -542,17 +696,6 @@ def _render_platform_evaluation(
         use_container_width=True,
     )
 
-    scatter_fig = px.scatter(
-        platform_df,
-        x="rating_score",
-        y="lexicon_to_rating",
-        labels={"rating_score": "Original Rating", "lexicon_to_rating": "Lexicon Rating"},
-        title=f"Original vs Lexicon Rating ({platform})",
-    )
-    if expand_visuals:
-        scatter_fig.update_layout(height=500)
-    st.plotly_chart(scatter_fig, use_container_width=True)
-
     try:
         actual = platform_df["rating_score"].round().astype(int)
         lexicon = platform_df["lexicon_to_rating"].round().astype(int)
@@ -575,34 +718,12 @@ def _render_platform_evaluation(
         )
         fig_counts.update_xaxes(type="category", categoryorder="array", categoryarray=[str(v) for v in pivot.columns])
         fig_counts.update_yaxes(type="category", categoryorder="array", categoryarray=[str(v) for v in pivot.index])
+        fig_counts.data[0].text = pivot.astype(int).astype(str).values
         fig_counts.update_traces(texttemplate="%{text}", textfont_size=14)
-
-        percent = pivot.div(pivot.sum(axis=1).replace(0, 1), axis=0) * 100
-        fig_pct = px.imshow(
-            percent.values,
-            x=percent.columns.astype(str),
-            y=percent.index.astype(str),
-            text_auto=True,
-            color_continuous_scale="Viridis",
-            labels={"x": "Lexicon-derived Rating", "y": "Original Rating"},
-            title=f"Rating Consistency — % within Original Rating ({platform})",
-        )
-        fig_pct.update_layout(
-            xaxis_title="Lexicon-derived Rating",
-            yaxis_title="Original Rating",
-            coloraxis_colorbar=dict(title="% of original rating"),
-        )
-        fig_pct.update_xaxes(type="category", categoryorder="array", categoryarray=[str(v) for v in percent.columns])
-        fig_pct.update_yaxes(type="category", categoryorder="array", categoryarray=[str(v) for v in percent.index])
-        percent_text = percent.round(1).astype(str) + "%"
-        fig_pct.data[0].text = percent_text.values
-        fig_pct.update_traces(texttemplate="%{text}", textfont_size=12)
 
         if expand_visuals:
             fig_counts.update_layout(height=650)
-            fig_pct.update_layout(height=650)
         st.plotly_chart(fig_counts, use_container_width=True)
-        st.plotly_chart(fig_pct, use_container_width=True)
     except Exception:
         heatmap = px.density_heatmap(
             platform_df,
@@ -665,19 +786,6 @@ def platform_evaluation_insights(df: pd.DataFrame) -> None:
                 else:
                     delta = metric_value - baseline_metrics[metric_name]
                     col.metric(metric_name, f"{metric_value:.3f}", delta=f"{delta:+.3f}")
-
-        export_rows: List[Dict[str, Any]] = []
-        for platform, metrics in metrics_cache.items():
-            for metric_name in METRIC_ORDER:
-                export_rows.append({"Platform": platform, "Metric": metric_name, "Value": metrics[metric_name]})
-        export_df = pd.DataFrame(export_rows)
-        st.download_button(
-            label="Download comparison metrics (CSV)",
-            data=export_df.to_csv(index=False).encode("utf-8"),
-            file_name="lexicon_rating_metrics_comparison.csv",
-            mime="text/csv",
-            use_container_width=True,
-        )
 
         columns = st.columns(len(eligible))
         for col, (platform, platform_df) in zip(columns, sorted(eligible.items())):
@@ -765,6 +873,25 @@ def wordcloud_section(df: pd.DataFrame) -> None:
 
 def preprocessing_explorer(df: pd.DataFrame) -> None:
     st.subheader("Pre-processing Explorer")
+    st.markdown(
+        "> **Pipeline insight:** Follow a single review as it moves from raw text through translation, cleaning, tokenisation, stopword removal, stemming, and finally sentiment labelling."
+    )
+    with st.expander("Try the pipeline on custom text", expanded=False):
+        sample_input = st.text_area(
+            "Type a sample review (max 500 characters)",
+            value="",
+            max_chars=500,
+            help="See how the pre-processing steps transform your input.",
+        )
+
+        if sample_input.strip():
+            preview = _simulate_preprocessing(sample_input)
+            for step_name, content in preview.items():
+                st.markdown(f"**{step_name}**")
+                st.code(content, language="text")
+        else:
+            st.caption("Enter text above to generate the step-by-step transformation.")
+
     if df.empty:
         st.info("Adjust the filters to view pre-processing details.")
         return
@@ -822,6 +949,364 @@ def preprocessing_explorer(df: pd.DataFrame) -> None:
         token_df = pd.DataFrame(token_counts, columns=["step", "count"])
         fig = px.line(token_df, x="step", y="count", markers=True, title="Token Count Across Steps")
         st.plotly_chart(fig, use_container_width=True)
+
+
+def _simulate_preprocessing(text: str) -> Dict[str, str]:
+    """Produce a lightweight preview of the cleaning pipeline for ad-hoc text."""
+
+    original = text.strip()
+    translated = _translate_to_indonesian(original)
+
+    cleaned = _clean_text_notebook_style(translated)
+    tokens = _tokenize_notebook_style(cleaned)
+    tokens_no_stop = _remove_stopwords_notebook_style(tokens)
+    stemmed_tokens = _stem_tokens_notebook_style(tokens_no_stop)
+    approximated_final = " ".join(stemmed_tokens)
+    sentiment_label, sentiment_score = _approximate_sentiment_label(stemmed_tokens)
+
+    return {
+        "Original": original or "(empty)",
+        "Translated (notebook-style)": translated or "(empty)",
+        "Cleaned": cleaned or "(empty)",
+        "Tokenized": str(tokens) if tokens else "[]",
+        "Stopword Removed": str(tokens_no_stop) if tokens_no_stop else "[]",
+        "Stemmed": str(stemmed_tokens) if stemmed_tokens else "[]",
+        "Final (approx. ulasan_bersih)": approximated_final or "(empty)",
+        "Lexicon label (approx.)": sentiment_label,
+        "Lexicon score (approx.)": f"{sentiment_score:+.2f}",
+    }
+
+
+def _load_lexicon_scores() -> Dict[str, Any]:
+    global _LEXICON_CACHE
+    if _LEXICON_CACHE is not None:
+        return _LEXICON_CACHE
+
+    scores: Dict[str, float] = {}
+    max_len = 1
+    file_names = ("positive.tsv", "negative.tsv")
+
+    for filename in file_names:
+        resolved: Optional[Path] = None
+        for candidate in (DATA_DIR / filename, REPO_ROOT / filename):
+            if candidate.exists():
+                resolved = candidate
+                break
+        if resolved is None:
+            continue
+
+        try:
+            df = pd.read_csv(resolved, sep="\t", dtype={"word": str, "weight": float})
+        except Exception:
+            continue
+
+        for _, row in df.iterrows():
+            word = str(row.get("word", "")).strip()
+            if not word:
+                continue
+            try:
+                weight = float(row.get("weight", 0.0))
+            except Exception:
+                continue
+            key = word.lower()
+            scores[key] = weight
+            max_len = max(max_len, len(key.split()))
+
+    _LEXICON_CACHE = {"scores": scores, "max_len": max_len}
+    return _LEXICON_CACHE
+
+
+def _translate_to_indonesian(text: str) -> str:
+    if not text:
+        return ""
+
+    if _GoogleTranslator is not None:
+        try:
+            translator = _GoogleTranslator()
+            return translator.translate(text, dest="id").text
+        except Exception:
+            pass
+
+    return _basic_translate_to_indonesian(text)
+
+
+def _clean_text_notebook_style(text: str) -> str:
+    if text is None:
+        return ""
+
+    content = str(text)
+    content = content.lower()
+    content = content.replace("\n", " ")
+    content = re.sub(r"\[.*?\]", "", content)
+    content = re.sub(r"https?://\S+|www\.\S+", " ", content)
+    content = content.translate(str.maketrans("", "", string.punctuation))
+    content = re.sub(r"\d+", " ", content)
+    content = re.sub(r"\s+", " ", content).strip()
+    return content
+
+
+def _ensure_nltk_resource(resource: str) -> None:
+    if nltk is None:
+        return
+    try:
+        if resource == "punkt":
+            nltk.data.find("tokenizers/punkt")
+        elif resource == "stopwords":
+            nltk.data.find("corpora/stopwords")
+    except LookupError:
+        try:
+            nltk.download(resource, quiet=True)
+        except Exception:
+            pass
+
+
+def _tokenize_notebook_style(text: str) -> List[str]:
+    if not text:
+        return []
+
+    if _word_tokenize is not None:
+        _ensure_nltk_resource("punkt")
+        try:
+            return _word_tokenize(text)
+        except LookupError:
+            return text.split()
+    return text.split()
+
+
+def _get_notebook_stopwords() -> set:
+    global _SIMULATED_STOPWORDS
+    if _SIMULATED_STOPWORDS is not None:
+        return _SIMULATED_STOPWORDS
+
+    stopword_set: set = set()
+
+    if _nltk_stopwords is not None:
+        _ensure_nltk_resource("stopwords")
+        try:
+            stopword_set.update(_nltk_stopwords.words("indonesian"))
+        except LookupError:
+            pass
+
+    stopword_set.update(
+        {
+            "ga",
+            "aplikasi",
+            "disney",
+            "nya",
+            "gak",
+            "aja",
+            "tolong",
+            "udah",
+            "banget",
+            "yg",
+            "ya",
+            "udh",
+            "bagus",
+            "jelek",
+            "pas",
+        }
+    )
+
+    if STOPWORDS:
+        stopword_set.update(word.lower() for word in STOPWORDS)
+
+    _SIMULATED_STOPWORDS = stopword_set
+    return stopword_set
+
+
+def _remove_stopwords_notebook_style(tokens: List[str]) -> List[str]:
+    if not tokens:
+        return []
+    stopword_set = _get_notebook_stopwords()
+    return [token for token in tokens if token not in stopword_set]
+
+
+def _get_notebook_stemmer():
+    global _SIMULATED_STEMMER
+    if _SIMULATED_STEMMER is not None:
+        return _SIMULATED_STEMMER
+    if StemmerFactory is not None:
+        try:
+            _SIMULATED_STEMMER = StemmerFactory().create_stemmer()
+            return _SIMULATED_STEMMER
+        except Exception:
+            _SIMULATED_STEMMER = None
+    return None
+
+
+def _stem_tokens_notebook_style(tokens: List[str]) -> List[str]:
+    if not tokens:
+        return []
+
+    stemmer = _get_notebook_stemmer()
+    if stemmer is not None:
+        try:
+            return [stemmer.stem(token) for token in tokens]
+        except Exception:
+            pass
+
+    # Fallback simple suffix stripping if stemmer unavailable
+    suffixes = ("nya", "lah", "kah", "pun", "kan", "an", "ing", "es", "s")
+    stemmed: List[str] = []
+    for token in tokens:
+        stem = token
+        for suffix in suffixes:
+            if stem.endswith(suffix) and len(stem) - len(suffix) >= 3:
+                stem = stem[: -len(suffix)]
+                break
+        stemmed.append(stem)
+    return stemmed
+
+
+def _approximate_sentiment_label(tokens: List[str]) -> Tuple[str, float]:
+    if not tokens:
+        return "Netral", 0.0
+
+    lexicon = _load_lexicon_scores()
+    scores = lexicon.get("scores", {}) if isinstance(lexicon, dict) else {}
+
+    lowered_tokens = [token.lower() for token in tokens if token]
+
+    if scores:
+        max_len = int(lexicon.get("max_len", 1) or 1)
+        total = 0.0
+        idx = 0
+        while idx < len(lowered_tokens):
+            matched = False
+            max_span = min(max_len, len(lowered_tokens) - idx)
+            for span in range(max_span, 0, -1):
+                phrase = " ".join(lowered_tokens[idx : idx + span])
+                if phrase in scores:
+                    total += scores[phrase]
+                    idx += span
+                    matched = True
+                    break
+            if not matched:
+                idx += 1
+
+        if total > 0:
+            return "Positif", total
+        if total < 0:
+            return "Negatif", total
+        return "Netral", 0.0
+
+    # Fallback heuristic if lexicon tables are unavailable
+    positive_words = {
+        "bagus",
+        "baik",
+        "hebat",
+        "mantap",
+        "suka",
+        "cinta",
+        "senang",
+        "puas",
+        "lancar",
+        "cepat",
+        "mudah",
+        "great",
+        "awesome",
+        "love",
+        "nice",
+        "amazing",
+        "keren",
+        "rekomendasi",
+        "terbaik",
+        "nyaman",
+    }
+
+    negative_words = {
+        "buruk",
+        "jelek",
+        "benci",
+        "parah",
+        "lambat",
+        "lemot",
+        "macet",
+        "crash",
+        "error",
+        "masalah",
+        "payah",
+        "susah",
+        "hate",
+        "bad",
+        "worse",
+        "terburuk",
+        "mengecewakan",
+        "ribet",
+        "gagal",
+    }
+
+    score = 0
+    for token in lowered_tokens:
+        if token in positive_words:
+            score += 1
+        elif token in negative_words:
+            score -= 1
+
+    if score > 0:
+        return "Positif", float(score)
+    if score < 0:
+        return "Negatif", float(score)
+    return "Netral", 0.0
+
+
+def _basic_translate_to_indonesian(text: str) -> str:
+    """Fallback word-level translator for common English terms."""
+
+    if not text:
+        return ""
+
+    dictionary = {
+        "why": "kenapa",
+        "what": "apa",
+        "app": "aplikasi",
+        "apps": "aplikasi",
+        "always": "selalu",
+        "crash": "macet",
+        "crashes": "macet",
+        "crashing": "macet",
+        "bad": "buruk",
+        "experience": "pengalaman",
+        "hate": "benci",
+        "love": "suka",
+        "good": "bagus",
+        "great": "hebat",
+        "not": "tidak",
+        "working": "berfungsi",
+        "work": "bekerja",
+        "please": "tolong",
+        "fix": "perbaiki",
+        "fun": "seru",
+        "boring": "membosankan",
+        "never": "tidak pernah",
+        "loading": "memuat",
+        "slow": "lambat",
+        "fast": "cepat",
+        "update": "pembaruan",
+        "problem": "masalah",
+        "error": "kesalahan",
+        "issue": "masalah",
+        "help": "bantuan",
+        "great": "hebat",
+        "amazing": "mengesankan",
+        "terrible": "mengerikan",
+        "awesome": "keren",
+        "recommend": "merekomendasikan",
+        "service": "layanan",
+        "support": "dukungan",
+    }
+
+    tokens = re.findall(r"\w+|[^\w\s]", text)
+    translated_tokens: List[str] = []
+    for token in tokens:
+        lower = token.lower()
+        if lower in dictionary:
+            translated = dictionary[lower]
+            translated_tokens.append(translated)
+        else:
+            translated_tokens.append(token)
+
+    return " ".join(translated_tokens)
 
 
 def _prepare_text_and_labels(df: pd.DataFrame) -> Tuple[pd.Series, pd.Series]:
@@ -1163,15 +1648,17 @@ def prediction_playground() -> None:
             }
         )
 
-    uploaded_pipelines = st.session_state.get("uploaded_pipelines", {})
-    for name, pipeline in uploaded_pipelines.items():
-        models_catalog.append(
-            {
-                "display": f"Uploaded pipeline: {name}",
-                "type": "pipeline",
-                "object": pipeline,
-            }
-        )
+    registry = _get_pipeline_registry()
+    for slot, entries in registry.items():
+        for name, pipeline in entries.items():
+            descriptor = f"Uploaded {slot} pipeline" if slot != "unknown" else "Uploaded pipeline"
+            models_catalog.append(
+                {
+                    "display": f"{descriptor}: {name}",
+                    "type": "pipeline",
+                    "object": pipeline,
+                }
+            )
 
     bert_trained = st.session_state.get("bert_results_trained")
     if (
@@ -1236,6 +1723,9 @@ def prediction_playground() -> None:
 
 def model_performance_section(df: pd.DataFrame) -> None:
     st.header("Model Performance Comparison")
+    st.markdown(
+        "> **Model insight:** Compare TF-IDF + SVM against IndoBERT embeddings + SVM to understand classification quality across feature representations."
+    )
 
     texts, labels = _prepare_text_and_labels(df)
     label_tuple = tuple(labels)
@@ -1252,6 +1742,8 @@ def model_performance_section(df: pd.DataFrame) -> None:
         st.session_state.pop("tfidf_loaded_label", None)
         st.session_state.pop("tfidf_trained_label", None)
         st.session_state.pop("tfidf_active_source", None)
+        st.session_state.pop("tfidf_results_repository", None)
+        st.session_state.pop("tfidf_selected_loaded_label", None)
         st.session_state.pop("bert_results", None)
         st.session_state.pop("bert_results_loaded", None)
         st.session_state.pop("bert_results_trained", None)
@@ -1260,14 +1752,11 @@ def model_performance_section(df: pd.DataFrame) -> None:
         st.session_state.pop("bert_loaded_config", None)
         st.session_state.pop("bert_trained_config", None)
         st.session_state.pop("bert_active_source", None)
+        st.session_state.pop("bert_results_repository", None)
+        st.session_state.pop("bert_selected_loaded_label", None)
         st.session_state["model_data_signature"] = data_signature
 
     _autoload_workspace_models()
-
-    notes = st.session_state.pop("_workspace_models_loaded_notes", None)
-    if notes:
-        for note in notes:
-            st.success(note)
 
     with st.expander("Import precomputed model results (JSON)", expanded=False):
         st.write(
@@ -1277,18 +1766,28 @@ def model_performance_section(df: pd.DataFrame) -> None:
         bert_file = st.file_uploader("IndoBERT results (JSON)", type=["json"], key="upload_bert")
         prefer_import = st.checkbox("Prefer imported results over retraining when present", value=True)
 
-        tfidf_preview = None
-        bert_preview = None
-
         if tfidf_file is not None:
             try:
-                tfidf_preview = json.load(tfidf_file)
+                tfidf_payload = json.load(tfidf_file)
+                if isinstance(tfidf_payload, dict) and "best_score" in tfidf_payload:
+                    label = _format_result_label("tfidf", tfidf_file.name)
+                    _store_loaded_result("tfidf", label, tfidf_payload)
+                    st.success(f"Loaded TF-IDF results: {label}")
+                else:
+                    st.error("Invalid TF-IDF JSON structure: expected a dict containing 'best_score'.")
             except Exception as exc:  # noqa: BLE001
                 st.error(f"Failed to parse TF-IDF JSON: {exc}")
 
         if bert_file is not None:
             try:
-                bert_preview = json.load(bert_file)
+                bert_payload = json.load(bert_file)
+                if isinstance(bert_payload, dict) and "best_score" in bert_payload:
+                    label = _format_result_label("bert", bert_file.name)
+                    _store_loaded_result("bert", label, bert_payload)
+                    st.session_state["bert_loaded_config"] = bert_payload.get("best_params", None)
+                    st.success(f"Loaded IndoBERT results: {label}")
+                else:
+                    st.error("Invalid IndoBERT JSON structure: expected a dict containing 'best_score'.")
             except Exception as exc:  # noqa: BLE001
                 st.error(f"Failed to parse IndoBERT JSON: {exc}")
 
@@ -1368,36 +1867,28 @@ def model_performance_section(df: pd.DataFrame) -> None:
                             if "ngram_summary" in norm or any(
                                 key.startswith("tfidf") or "ngram" in str(key).lower() for key in best_params.keys()
                             ):
-                                st.session_state["tfidf_results_loaded"] = norm
-                                st.session_state["tfidf_results"] = norm
-                                st.session_state["tfidf_loaded_label"] = f"Imported from {path.name}"
-                                st.session_state["tfidf_active_source"] = "loaded"
-                                st.success(f"Loaded {path.name} as TF-IDF results.")
+                                label = _format_result_label("tfidf", path.name)
+                                _store_loaded_result("tfidf", label, norm)
+                                st.success(f"Loaded TF-IDF results: {label}")
                                 assigned = True
                             elif "c_search" in norm and isinstance(best_params, dict) and best_params.get("model_name"):
-                                st.session_state["bert_results_loaded"] = norm
-                                st.session_state["bert_results"] = norm
-                                st.session_state["bert_loaded_label"] = f"Imported from {path.name}"
+                                label = _format_result_label("bert", path.name)
+                                _store_loaded_result("bert", label, norm)
                                 st.session_state["bert_loaded_config"] = best_params
-                                st.session_state["bert_active_source"] = "loaded"
-                                st.success(f"Loaded {path.name} as IndoBERT results.")
+                                st.success(f"Loaded IndoBERT results: {label}")
                                 assigned = True
                             elif "c_search" in norm or (
                                 isinstance(norm.get("cv_results"), dict)
                                 and any(col.startswith("param_kernel") for col in norm["cv_results"].keys())
                             ):
-                                st.session_state["tfidf_results_loaded"] = norm
-                                st.session_state["tfidf_results"] = norm
-                                st.session_state["tfidf_loaded_label"] = f"Imported from {path.name}"
-                                st.session_state["tfidf_active_source"] = "loaded"
-                                st.success(f"Loaded {path.name} into TF-IDF slot (SVM/grid heuristic).")
+                                label = _format_result_label("tfidf", path.name)
+                                _store_loaded_result("tfidf", label, norm)
+                                st.success(f"Loaded TF-IDF results: {label}")
                                 assigned = True
 
                         if not assigned:
-                            st.session_state["tfidf_results_loaded"] = norm
-                            st.session_state["tfidf_results"] = norm
-                            st.session_state["tfidf_loaded_label"] = f"Imported from {path.name}"
-                            st.session_state["tfidf_active_source"] = "loaded"
+                            label = _format_result_label("tfidf", path.name)
+                            _store_loaded_result("tfidf", label, norm)
                             st.info(
                                 f"Loaded {path.name} into TF-IDF slot (fallback). Use retrain buttons to recompute if needed."
                             )
@@ -1405,45 +1896,13 @@ def model_performance_section(df: pd.DataFrame) -> None:
                     except Exception as exc:  # noqa: BLE001
                         st.error(f"Failed to load {path.name}: {exc}")
 
-        if tfidf_preview is not None:
-            st.markdown("**TF-IDF JSON preview**")
-            try:
-                st.json(tfidf_preview)
-            except Exception:
-                st.write(tfidf_preview)
-            if st.button("Load TF-IDF results into dashboard", key="load_tfidf"):
-                if isinstance(tfidf_preview, dict) and "best_score" in tfidf_preview:
-                    st.session_state["tfidf_results_loaded"] = tfidf_preview
-                    st.session_state["tfidf_results"] = tfidf_preview
-                    st.session_state["tfidf_loaded_label"] = "Imported from uploaded JSON"
-                    st.session_state["tfidf_active_source"] = "loaded"
-                    st.success("TF-IDF results loaded into session.")
-                else:
-                    st.error("Invalid TF-IDF JSON structure: expected a dict with 'best_score'.")
-
-        if bert_preview is not None:
-            st.markdown("**IndoBERT JSON preview**")
-            try:
-                st.json(bert_preview)
-            except Exception:
-                st.write(bert_preview)
-            if st.button("Load IndoBERT results into dashboard", key="load_bert"):
-                if isinstance(bert_preview, dict) and "best_score" in bert_preview:
-                    st.session_state["bert_results_loaded"] = bert_preview
-                    st.session_state["bert_results"] = bert_preview
-                    st.session_state["bert_loaded_label"] = "Imported from uploaded JSON"
-                    st.session_state["bert_loaded_config"] = bert_preview.get("best_params", None)
-                    st.session_state["bert_active_source"] = "loaded"
-                    st.success("IndoBERT results loaded into session.")
-                else:
-                    st.error("Invalid IndoBERT JSON structure: expected a dict with 'best_score'.")
-
         st.session_state["prefer_import"] = prefer_import
 
     with st.expander("Load saved scikit-learn pipelines (joblib/pkl)", expanded=False):
         if joblib is None:
             st.info("Install the `joblib` package to enable loading persisted pipelines.")
         else:
+            registry = _get_pipeline_registry()
             workspace_pipelines = _discover_saved_pipelines()
             if workspace_pipelines:
                 st.markdown("**Workspace: detected saved pipelines**")
@@ -1453,9 +1912,11 @@ def model_performance_section(df: pd.DataFrame) -> None:
                     if cols[1].button("Load", key=f"load_pipeline_{path.stem}"):
                         try:
                             pipeline_obj = joblib.load(path)
-                            pipelines = st.session_state.setdefault("uploaded_pipelines", {})
-                            pipelines[path.name] = pipeline_obj
-                            st.success(f"Loaded `{path.name}` for inference.")
+                            slot = _infer_pipeline_slot(path.name, pipeline_obj)
+                            registry = _get_pipeline_registry()
+                            registry[slot][path.name] = pipeline_obj
+                            st.session_state["uploaded_pipelines"] = registry
+                            st.success(f"Loaded `{path.name}` ({slot}) for inference.")
                         except Exception as exc:  # noqa: BLE001
                             st.error(f"Failed to load {path.name}: {exc}")
 
@@ -1467,23 +1928,29 @@ def model_performance_section(df: pd.DataFrame) -> None:
             )
 
             if uploaded is not None:
-                pipelines = st.session_state.setdefault("uploaded_pipelines", {})
                 label = _label_saved_pipeline(Path(uploaded.name))
-                if label not in pipelines:
-                    try:
-                        pipeline_obj = joblib.load(uploaded)
-                        pipelines[label] = pipeline_obj
-                        st.success(f"Loaded `{label}` for interactive predictions.")
-                    except Exception as exc:  # noqa: BLE001
-                        st.error(f"Failed to load pipeline: {exc}")
-                else:
-                    st.info(f"Pipeline `{label}` is already loaded.")
+                try:
+                    pipeline_obj = joblib.load(uploaded)
+                    slot = _infer_pipeline_slot(uploaded.name, pipeline_obj)
+                    registry = _get_pipeline_registry()
+                    if label not in registry[slot]:
+                        registry[slot][label] = pipeline_obj
+                        st.session_state["uploaded_pipelines"] = registry
+                        st.success(f"Loaded `{label}` ({slot}) for interactive predictions.")
+                    else:
+                        st.info(f"Pipeline `{label}` is already loaded under the {slot} bucket.")
+                except Exception as exc:  # noqa: BLE001
+                    st.error(f"Failed to load pipeline: {exc}")
 
-            pipelines = st.session_state.get("uploaded_pipelines", {})
-            if pipelines:
-                st.caption("Available pipelines: " + ", ".join(pipelines.keys()))
+            registry = _get_pipeline_registry()
+            summary_bits: List[str] = []
+            for bucket, entries in registry.items():
+                if entries:
+                    summary_bits.append(f"{bucket}: {', '.join(entries.keys())}")
+            if summary_bits:
+                st.caption("Available pipelines → " + " | ".join(summary_bits))
                 if st.button("Clear uploaded pipelines", key="clear_uploaded_pipelines"):
-                    st.session_state["uploaded_pipelines"] = {}
+                    st.session_state["uploaded_pipelines"] = {"tfidf": {}, "bert": {}, "unknown": {}}
                     st.info("Cleared uploaded pipelines.")
 
     tfidf_tab, bert_tab = st.tabs(["SVM + TF-IDF", "SVM + IndoBERT"])
@@ -1495,24 +1962,16 @@ def model_performance_section(df: pd.DataFrame) -> None:
             "That is why the search space focuses on the regularisation strength (`C`) and TF-IDF n-gram ranges."
         )
 
-        tfidf_loaded = st.session_state.get("tfidf_results_loaded")
         tfidf_trained = st.session_state.get("tfidf_results_trained")
-        prefer_import = st.session_state.get("prefer_import", True)
 
         tfidf_options: List[str] = []
-        if tfidf_loaded is not None:
-            tfidf_options.append("Loaded results")
         if tfidf_trained is not None:
             tfidf_options.append("Trained results")
         tfidf_options.append("Train new model")
 
         active_source = st.session_state.get("tfidf_active_source")
-        if active_source == "loaded" and "Loaded results" in tfidf_options:
-            default_choice = "Loaded results"
-        elif active_source == "trained" and "Trained results" in tfidf_options:
+        if active_source == "trained" and "Trained results" in tfidf_options:
             default_choice = "Trained results"
-        elif prefer_import and "Loaded results" in tfidf_options:
-            default_choice = "Loaded results"
         else:
             default_choice = tfidf_options[0]
 
@@ -1523,14 +1982,7 @@ def model_performance_section(df: pd.DataFrame) -> None:
             key="tfidf_source_choice",
         )
 
-        if selected_option == "Loaded results":
-            if tfidf_loaded is None:
-                st.warning("No imported TF-IDF results available yet.")
-            else:
-                if st.session_state.get("tfidf_active_source") != "loaded":
-                    st.session_state["tfidf_results"] = tfidf_loaded
-                    st.session_state["tfidf_active_source"] = "loaded"
-        elif selected_option == "Trained results":
+        if selected_option == "Trained results":
             if tfidf_trained is None:
                 st.warning("Train the TF-IDF model first to view these results.")
             else:
@@ -1549,9 +2001,7 @@ def model_performance_section(df: pd.DataFrame) -> None:
         tfidf_results = st.session_state.get("tfidf_results")
         if tfidf_results:
             source_label = None
-            if st.session_state.get("tfidf_active_source") == "loaded":
-                source_label = st.session_state.get("tfidf_loaded_label")
-            elif st.session_state.get("tfidf_active_source") == "trained":
+            if st.session_state.get("tfidf_active_source") == "trained":
                 source_label = st.session_state.get("tfidf_trained_label")
             if source_label:
                 st.caption(f"Viewing: {source_label}")
@@ -1589,13 +2039,7 @@ def model_performance_section(df: pd.DataFrame) -> None:
                 except Exception as exc:
                     st.error(f"Failed to render confusion matrix: {exc}")
             else:
-                if "cv_results" in tfidf_results and tfidf_results.get("cv_results"):
-                    st.subheader("Cross-validation results (preview)")
-                    try:
-                        st.write("Grid / CV results are present but no confusion matrix:")
-                        st.json(tfidf_results.get("cv_results"))
-                    except Exception:
-                        st.write(tfidf_results.get("cv_results"))
+                st.info("Confusion matrix not included in this export. Train locally to generate evaluation diagnostics.")
 
             if "ngram_summary" in tfidf_results and tfidf_results.get("ngram_summary") is not None:
                 st.subheader("N-gram Search Summary")
@@ -1614,10 +2058,11 @@ def model_performance_section(df: pd.DataFrame) -> None:
                 except Exception as exc:
                     st.error(f"Failed to render n-gram summary: {exc}")
         else:
-            if st.session_state.get("prefer_import"):
-                st.info("Load precomputed TF-IDF JSON results or switch to 'Train new model' to create fresh metrics.")
-            else:
-                st.info("Select 'Train new model' to fit the TF-IDF + SVM pipeline.")
+            st.info("Train the TF-IDF model to generate evaluation metrics.")
+
+        tfidf_registry = _get_pipeline_registry().get("tfidf", {})
+        if tfidf_registry:
+            st.caption("TF-IDF pipelines available for inference: " + ", ".join(tfidf_registry.keys()))
 
     with bert_tab:
         if AutoTokenizer is None or AutoModel is None or torch is None:
@@ -1649,24 +2094,17 @@ def model_performance_section(df: pd.DataFrame) -> None:
                 if st.session_state.get("bert_active_source") == "trained":
                     st.session_state["bert_active_source"] = "loaded" if st.session_state.get("bert_results_loaded") else None
 
-        bert_loaded = st.session_state.get("bert_results_loaded")
         bert_trained = st.session_state.get("bert_results_trained")
         prefer_import = st.session_state.get("prefer_import", True)
 
         bert_options: List[str] = []
-        if bert_loaded is not None:
-            bert_options.append("Loaded results")
         if bert_trained is not None:
             bert_options.append("Trained results")
         bert_options.append("Train new model")
 
         bert_active_source = st.session_state.get("bert_active_source")
-        if bert_active_source == "loaded" and "Loaded results" in bert_options:
-            default_choice = "Loaded results"
-        elif bert_active_source == "trained" and "Trained results" in bert_options:
+        if bert_active_source == "trained" and "Trained results" in bert_options:
             default_choice = "Trained results"
-        elif prefer_import and "Loaded results" in bert_options:
-            default_choice = "Loaded results"
         else:
             default_choice = bert_options[0]
 
@@ -1677,14 +2115,7 @@ def model_performance_section(df: pd.DataFrame) -> None:
             key="bert_source_choice",
         )
 
-        if selected_option == "Loaded results":
-            if bert_loaded is None:
-                st.warning("No imported IndoBERT results available yet.")
-            else:
-                if st.session_state.get("bert_active_source") != "loaded":
-                    st.session_state["bert_results"] = bert_loaded
-                    st.session_state["bert_active_source"] = "loaded"
-        elif selected_option == "Trained results":
+        if selected_option == "Trained results":
             if bert_trained is None:
                 st.warning("Train the IndoBERT model first to view these results.")
             else:
@@ -1717,12 +2148,7 @@ def model_performance_section(df: pd.DataFrame) -> None:
         bert_results = st.session_state.get("bert_results")
         if bert_results:
             source_label = None
-            if st.session_state.get("bert_active_source") == "loaded":
-                source_label = st.session_state.get("bert_loaded_label")
-                loaded_cfg = st.session_state.get("bert_loaded_config")
-                if loaded_cfg:
-                    st.caption(f"Loaded params: {loaded_cfg}")
-            elif st.session_state.get("bert_active_source") == "trained":
+            if st.session_state.get("bert_active_source") == "trained":
                 source_label = st.session_state.get("bert_trained_label")
                 trained_cfg = st.session_state.get("bert_trained_config")
                 if trained_cfg:
@@ -1755,13 +2181,11 @@ def model_performance_section(df: pd.DataFrame) -> None:
                 use_container_width=True,
             )
         else:
-            if st.session_state.get("prefer_import"):
-                st.info("Load a precomputed IndoBERT JSON or switch to 'Train new model' to run the pipeline.")
-            else:
-                st.info("Configure parameters and run the IndoBERT model to see results.")
+            st.info("Configure parameters and train the IndoBERT model to view evaluation metrics.")
 
-    prediction_playground()
-
+        bert_registry = _get_pipeline_registry().get("bert", {})
+        if bert_registry:
+            st.caption("IndoBERT pipelines available for inference: " + ", ".join(bert_registry.keys()))
 
 def _parse_review_dates(series: pd.Series) -> pd.Series:
     """Parse date strings that may mix date-only and timestamp formats."""
@@ -1805,6 +2229,9 @@ def main() -> None:
     draw_summary_metrics(filtered_df)
 
     st.subheader("Sentiment Overview")
+    st.markdown(
+        "> **Sentiment insight:** Use the filters to observe how sentiment mixes differ between App Store and Play Store reviews."
+    )
     with st.container():
         col1, col2 = st.columns(2)
         with col1:
@@ -1812,32 +2239,66 @@ def main() -> None:
         with col2:
             rating_distribution(filtered_df)
 
-    st.subheader("Monthly Sentiment Trend")
+    st.subheader("Sentiment Trends")
+    st.markdown(
+        "> **Trend insight:** Use the tabs below to switch between month-over-month sentiment movements and the broader 2020-2022 vs. 2023-2025 period comparison."
+    )
     sentiment_timeline(filtered_df)
 
     platform_evaluation_insights(filtered_df)
 
-    wordcloud_section(filtered_df)
+    st.subheader("Exploration Playground")
+    tab_preprocess, tab_wordcloud, tab_prediction = st.tabs(
+        ["Preprocessing Explorer", "Wordcloud Explorer", "Sentiment Prediction Playground"]
+    )
 
-    preprocessing_explorer(filtered_df)
+    with tab_preprocess:
+        preprocessing_explorer(filtered_df)
+
+    with tab_wordcloud:
+        wordcloud_section(filtered_df)
+
+    with tab_prediction:
+        prediction_playground()
 
     model_performance_section(filtered_df)
 
     st.subheader("Filtered Reviews")
-    st.dataframe(
-        filtered_df[
-            [
-                "review_date",
-                "Platform",
-                "rating_score",
-                "sentiment_label",
-                "original_text",
-                "translated_text",
-                "ulasan_bersih",
-            ]
-        ].sort_values("review_date", ascending=False),
-        use_container_width=True,
-    )
+    review_table = filtered_df.copy()
+    if "review_date" in review_table.columns:
+        review_table = review_table.sort_values("review_date", ascending=False)
+    for col in ("predicted_sentiment_tfidf", "predicted_sentiment_bert"):
+        if col not in review_table.columns:
+            review_table[col] = np.nan
+
+    desired_order = [
+        "original_text",
+        "translated_text",
+        "cleaned_text",
+        "tokenized_text",
+        "stemmed_text",
+        "ulasan_bersih",
+        "rating_score",
+        "sentiment_label",
+        "predicted_sentiment_tfidf",
+        "predicted_sentiment_bert",
+    ]
+    existing_columns = [col for col in desired_order if col in review_table.columns]
+    review_display = review_table[existing_columns].copy()
+    rename_map = {
+        "original_text": "Original review",
+        "translated_text": "Translated",
+        "cleaned_text": "Cleaned",
+        "tokenized_text": "Tokenized",
+        "stemmed_text": "Stemmed",
+        "ulasan_bersih": "Cleaned review",
+        "rating_score": "Rating",
+        "sentiment_label": "Sentiment label",
+        "predicted_sentiment_tfidf": "Predicted (TF-IDF)",
+        "predicted_sentiment_bert": "Predicted (IndoBERT)",
+    }
+    review_display = review_display.rename(columns={k: v for k, v in rename_map.items() if k in review_display.columns})
+    st.dataframe(review_display, use_container_width=True)
 
 
 if __name__ == "__main__":
