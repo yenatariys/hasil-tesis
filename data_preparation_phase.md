@@ -46,18 +46,38 @@ play_df.isnull().sum()
 ✅ **Conclusion**: 100% data completeness—no imputation required.
 
 #### Language Distribution Analysis
-Manual inspection of 100 randomly sampled reviews revealed:
+Automated language detection analysis was performed on the original review text using heuristic-based pattern matching with common Indonesian and English indicators.
 
-**App Store** (scraped from U.S. store):
-- English: 94.2%
-- Indonesian: 5.8% (Indonesian users accessing U.S. store)
+**Detection Method**:
+- Indonesian indicators: 30 common words (yang, tidak, saya, untuk, dengan, etc.) + suffixes (-nya, -kan, -an, -ku, -mu)
+- English indicators: 24 common words (the, is, are, was, have, etc.) + suffixes (-ing, -ed, -tion, -ness, -ful)
+- Classification: Based on indicator word counts and morphological patterns
 
-**Play Store** (scraped from Indonesian store):
-- Indonesian: 78.3%
-- English: 19.1%
-- Mixed (code-switching): 2.6%
+**App Store** (838 reviews, scraped from U.S. store):
+- Indonesian: 326 reviews (38.9%)
+- English: 307 reviews (36.6%)
+- Unclear: 202 reviews (24.1%) - very short reviews, technical terms, colloquial slang
+- Mixed (code-switching): 3 reviews (0.4%)
 
-**Implication**: Translation step is mandatory to ensure uniform Indonesian text for lexicon-based sentiment analysis.
+**Play Store** (838 reviews, scraped from Indonesian store):
+- Indonesian: 561 reviews (66.9%)
+- English: 12 reviews (1.4%)
+- Unclear: 263 reviews (31.4%) - very short reviews, technical terms, colloquial slang
+- Mixed (code-switching): 2 reviews (0.2%)
+
+**Sample "Unclear" Reviews** (language-ambiguous, typically very short):
+- App Store: "Kayak titit", "gw kira gratis", "I dont even get any verification code for multiple times"
+- Play Store: "Lumayanlah alternatif hiburan Gratis otomatis, krn pake HALO.", "Rada kesel pengen nonton", "Hebat"
+
+**Key Findings**:
+1. **App Store**: Nearly balanced English (36.6%) and Indonesian (38.9%) distribution, reflecting U.S. store accessibility from Indonesia
+2. **Play Store**: Strong Indonesian dominance (66.9%), with minimal English (1.4%)
+3. **High unclear rate**: 24.1-31.4% of reviews are very short (1-5 words) or use colloquial slang not captured by formal indicators
+4. **Code-switching rare**: Only 0.2-0.4% explicitly mix both languages in single review
+
+**Implication**: Translation step is **mandatory** to ensure uniform Indonesian text for lexicon-based sentiment analysis, as 36.6% of App Store and 1.4% of Play Store reviews contain English content.
+
+**Source**: Automated language detection using `language_distribution_analysis.py` with heuristic pattern matching. Results saved to `outputs/language_distribution_summary.csv`.
 
 ### 3.1.3 Selected Features
 From the raw data, the following columns were retained for preprocessing:
