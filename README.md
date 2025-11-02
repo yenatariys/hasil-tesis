@@ -1,76 +1,71 @@
-# Disney+ Hotstar Reviews — Dashboard & Notebooks
+# Disney+ Hotstar Reviews Dashboard
 
-This repository contains lexicon‑labeled App Store and Play Store reviews for Disney+ Hotstar plus a Streamlit dashboard to explore preprocessing, sentiment labels, and model evaluation results.
-
-Files of interest
-- `dashboard.py` — Streamlit app that loads the CSVs, lets you filter by platform/date/sentiment, inspects preprocessing steps, and compares model results (SVM + TF‑IDF and SVM + IndoBERT).
-- `lex_labeled_review_app.csv`, `lex_labeled_review_play.csv` — source datasets.
-- `Tesis_Appstore_FIX.ipynb`, `Tesis_Playstore_FIX.ipynb` — notebooks used to preprocess and train models. They include helper cells to export results as JSON.
-- `exported_model_results_app.json`, `exported_model_results_play.json` — sample notebook-exported models (if present in the repo).
-
-Quick start (Windows PowerShell)
-
-1. Create and activate a virtual environment (recommended):
-
-```powershell
-python -m venv .venv
-
-Lexicon-labeled Disney+ Hotstar reviews from the App Store and Play Store, plus a Streamlit dashboard for exploring preprocessing steps, sentiment distributions, and model evaluation results.
+Streamlit dashboard plus notebooks for exploring lexicon-labelled Disney+ Hotstar reviews from the App Store and Play Store. The app mirrors the preprocessing steps from the research notebooks, visualises sentiment distributions, and lets you import notebook-generated model metrics.
 
 ## Repository Layout
 
-- `dashboard.py` – thin entry point that imports and runs `src.dashboard.main()` so existing commands keep working.
-- `src/dashboard.py` – full Streamlit application (data loading, filters, visualizations, model comparison).
-- `data/lex_labeled_review_app.csv`, `data/lex_labeled_review_play.csv` – cleaned review datasets with lexicon-derived sentiment labels.
-- `outputs/exported_model_results_app.json`, `outputs/exported_model_results_play.json` – JSON exports produced by the notebooks (GridSearchCV summaries, metrics, confusion matrices when available).
-- `notebooks/Tesis_Appstore_FIX.ipynb`, `notebooks/Tesis_Playstore_FIX.ipynb` – preprocessing + modeling workflows; include helper cells for exporting JSON summaries.
-- `.streamlit/config.toml` – enabling Streamlit autoreload on save.
-- `run_dashboard.ps1` – PowerShell helper that activates `.venv` (if present) and launches the dashboard.
-- `requirements.txt` – minimal dependency list used for local runs.
-- `combined_reviews.csv` – optional merged dataset (App + Play) kept for reference.
+- `dashboard.py` – thin entry point that forwards to `src.dashboard.main()`.
+- `src/dashboard.py` – full Streamlit application with filters, playground, and visualisations.
+- `data/lex_labeled_review_app.csv`, `data/lex_labeled_review_play.csv` – main datasets used by the dashboard.
+- `data/positive.tsv`, `data/negative.tsv` – lexicon weights used in the preprocessing playground.
+- `notebooks/Tesis_Appstore_FIX.ipynb`, `notebooks/Tesis_Playstore_FIX.ipynb` – end-to-end preprocessing and modelling workflows.
+- `outputs/exported_model_results_*.json` – optional GridSearchCV exports loaded by the dashboard for comparison views.
+- `run_dashboard.ps1` – helper script that activates `.venv` (when present) and launches Streamlit.
 
-## Quick Start (Windows PowerShell)
+## Dashboard Highlights
+
+- **Sentiment overview** – stacked bars surface platform-level review counts with inline review/percentage labels.
+- **Trend explorer** – monthly line chart plus a period-comparison tab (2020–2022 vs 2023–2025) with counts and percentage annotations.
+- **Platform evaluation** – MAE/RMSE/correlation table accompanied by a counts-only rating-consistency heatmap with in-cell totals; download the metrics for single-platform views as CSV.
+- **Model performance** – load precomputed TF-IDF or IndoBERT JSON results, toggle whether imports override retraining, and retrain either pipeline directly from the UI.
+- **Prediction playground & filtered reviews** – test sentences against any loaded pipeline and inspect the curated review table (date, platform, rating, sentiment, original and processed text).
+
+## Prerequisites
+
+- Python 3.10 or newer (project tested on Python 3.12).
+- Windows PowerShell 5.1 or PowerShell 7 for the commands below.
+- Git (optional) if you plan to clone this repository instead of downloading a ZIP.
+
+## Setup (Windows PowerShell)
 
 ```powershell
 cd C:\Users\Lenovo\Downloads\hasil-tesis
 python -m venv .venv
 .\.venv\Scripts\activate
+pip install --upgrade pip
 pip install -r requirements.txt
+```
 
-# Launch Streamlit (defaults to port 8501; override if you like)
-streamlit run dashboard.py --server.port 8502
+To launch the dashboard once dependencies are installed:
 
-# Or rely on the helper script, which activates .venv when available
+```powershell
+streamlit run dashboard.py
+```
+
+The default Streamlit port is 8501. Provide `--server.port 8502` (or another free port) if you need to avoid conflicts. Alternatively, run the helper script:
+
+```powershell
 .\run_dashboard.ps1
-- IndoBERT embedding + SVM is heavy: use the notebook in Colab to run embeddings/GridSearchCV, export results to JSON, then load into the dashboard to visualize results without recomputing.
-Open http://localhost:8502 in your browser once the app reports that it is running. Press `Ctrl+C` in the terminal to stop Streamlit.
+```
 
-### Dependencies
+## Optional Dependencies
 
-- Core dashboard: `pandas`, `numpy`, `streamlit`, `plotly`, `matplotlib`, `wordcloud`, `scikit-learn`, `nltk`, `sastrawi`.
-- IndoBERT workflow: `transformers` and `torch` (large downloads; GPU recommended). The dashboard detects the packages and warns when they are absent.
+- `nltk`, `sastrawi`, and `wordcloud` enrich the preprocessing playground; install them via `pip install nltk Sastrawi wordcloud` if they are missing.
+- `transformers` and `torch` are only required when you want to recompute IndoBERT embeddings or fine-tune models locally. The dashboard works without them and will surface clear notices when advanced features are unavailable.
 
-## Using Notebook Exports
+## Working With Notebooks
 
-1. Train or tune models in the notebooks (often via Google Colab for IndoBERT).
-2. Run the provided export cell to produce `exported_model_results_*.json` files.
-3. Copy the JSON files into `outputs/` (the dashboard also falls back to the repo root if needed).
-4. In the dashboard open **Model Performance Comparison → Import precomputed model results (JSON)**.
-5. Use **Preview** to inspect the JSON summary or **Load** to inject it into the TF-IDF or IndoBERT result panes. Loaded results stay in `st.session_state` until you refresh the app.
-
-The importer normalizes GridSearchCV exports. When `classification_report` or `confusion_matrix` is missing, the UI explains why and falls back to showing cross-validation summaries.
-
-## Data Refresh Workflow
-
-1. Update the notebooks and re-export `lex_labeled_review_*.csv` and JSON summaries.
-2. Replace the files under `data/` and `outputs/` with the newest artifacts.
-3. Restart the dashboard (or let Streamlit autoreload) to see the latest data.
+Use the notebooks under `notebooks/` to retrain models, regenerate lexicon-labelled datasets, and export JSON summaries. Each notebook contains cells that produce `lex_labeled_review_*.csv` and `exported_model_results_*.json`. Place the refreshed CSVs in `data/` and JSON exports in `outputs/` before restarting the dashboard.
 
 ## Troubleshooting
 
-- **Port already in use** – run `streamlit run dashboard.py --server.port 8601` (or another free port).
-- **Large dependency installs** – omit `transformers`/`torch` if you only plan to view precomputed IndoBERT results.
-- **Auto reload not working** – ensure you are running Streamlit >= 1.25 and keep `.streamlit/config.toml` intact.
+- **Missing optional packages** – the dashboard falls back to simulated behaviour and surfaces callouts; install the optional packages listed above for full functionality.
+- **WordCloud import error** – remove the word cloud panel or install `wordcloud` via `pip install wordcloud`.
+- **Large dependency downloads** – skip `transformers` and `torch` if you only plan to visualise precomputed results.
+- **Auto-reload disabled** – ensure `.streamlit/config.toml` is present so Streamlit watches files for changes.
 
-Generated on 2025-11-01 – aligns with the reorganized repository layout.
-- `lex_labeled_review_play.csv` – Play Store reviews preprocessed with the same pipeline.
+## Helpful Commands
+
+- Update Python packages: `pip install --upgrade -r requirements.txt`.
+- Clean Streamlit cache: `streamlit cache clear`.
+- Run unit checks without starting the UI: `python -m compileall src`.
