@@ -6,7 +6,55 @@ This document contains actual results from SVM experiments on Disney+ Hotstar se
 **Datasets:**
 - Play Store: 838 reviews
 - App Store: 838 reviews
-- Split: 80/20 (670/168) (train/test, stratified)
+- Split: 80/20 (670/168) (train/test)
+
+---
+
+## Data Splitting
+
+### Play Store
+**Configuration:**
+- Total samples: 838
+- Train: 670 (80%)
+- Test: 168 (20%)
+- Stratified: Yes (stratify=y_multi)
+- Random state: 42
+
+**Train Set Class Distribution (n=670):**
+| Class | Count | Percentage |
+|-------|-------|------------|
+| Negatif | 378 | 56.4% |
+| Netral | 196 | 29.3% |
+| Positif | 96 | 14.3% |
+
+**Test Set Class Distribution (n=168):**
+| Class | Count | Percentage |
+|-------|-------|------------|
+| Negatif | 94 | 56.0% |
+| Netral | 49 | 29.2% |
+| Positif | 25 | 14.9% |
+
+### App Store
+**Configuration:**
+- Total samples: 838
+- Train: 670 (80%)
+- Test: 168 (20%)
+- Stratified: No
+- Random state: 42
+
+**Train Set Class Distribution (n=670):**
+| Class | Count | Percentage |
+|-------|-------|------------|
+| Negatif | 399 | 59.6% |
+| Netral | 186 | 27.8% |
+| Positif | 85 | 12.7% |
+
+**Test Set Class Distribution (n=168):**
+| Class | Count | Percentage |
+|-------|-------|------------|
+| Negatif | 99 | 58.9% |
+| Netral | 48 | 28.6% |
+| Positif | 21 | 12.5% |
 
 ---
 
