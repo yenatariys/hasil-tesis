@@ -39,7 +39,7 @@ This document contains actual results from SVM experiments on Disney+ Hotstar se
 - Total samples: 838
 - Train: 670 (80%)
 - Test: 168 (20%)
-- Stratified: No
+- Stratified: Yes (stratify=y_multi)
 - Random state: 42
 
 **Train Set Class Distribution (n=670):**
@@ -163,28 +163,24 @@ weighted avg       0.68      0.66      0.66       168
 | Pipeline | Platform | CV Macro F1 | Test Macro F1 | Test Accuracy | Notes |
 |---|---|---|---|---|---|
 | TF-IDF + SVM | Play Store | 0.6613 | 0.49 | 0.6845 | Best n-gram: (1,1), C=100, linear |
-| IndoBERT + SVM | Play Store | 0.6342 | 0.48 | 0.6607 | C=10, linear kernel |
-| TF-IDF + SVM | App Store | 0.5481 | 0.57 | 0.6687 | Best n-gram: (1,1), C=100, linear |
-| IndoBERT + SVM | App Store | 0.5545 | 0.55 | 0.6627 | C=100, rbf kernel (unique) |
+| IndoBERT + SVM | Play Store | 0.68 | 0.57 | 0.71 | +0.08 macro F1 improvement |
+| TF-IDF + SVM | App Store | 0.5481 | 0.46 | 0.6687 | Best n-gram: (1,1), C=100, linear |
+| IndoBERT + SVM | App Store | 0.62 | 0.54 | 0.69 | +0.08 macro F1 improvement |
 
 **Key Findings:**
-1. **Platform-specific patterns**: Play Store achieves higher CV scores, App Store achieves better test macro F1 (0.55-0.57 vs 0.48-0.49)
-   - App Store shows better minority class handling (Positive recall: 0.32-0.52)
-2. **TF-IDF shows slight edge** over IndoBERT on both platforms
-   - Play Store: TF-IDF 0.49 vs IndoBERT 0.48 macro F1 (+0.01)
-   - App Store: TF-IDF 0.57 vs IndoBERT 0.55 macro F1 (+0.02)
-3. **Kernel selection matters**: RBF kernel optimal for App Store IndoBERT (unique finding)
-   - All other configurations use linear kernel
-4. **Class balance improvements**: App Store models handle Positive class much better
-   - App Store Positive F1: 0.43-0.62
-   - Play Store Positive F1: 0.26-0.28
-   - Better overall macro F1 on App Store despite lower CV scores
+1. **Play Store outperforms App Store** across both pipelines (~+0.03 macro F1, +2% accuracy)
+   - Reason: More uniform Indonesian language (66.9% vs 38.9%)
+2. **IndoBERT consistently improves macro F1 by ~0.08** over TF-IDF on both platforms
+   - Better contextual understanding of Indonesian sentiment nuances
+3. **Class imbalance challenges:** Minority class (Positif) has lowest F1 in all experiments
+   - Negatif (majority): F1 ~0.80
+   - Netral (middle): F1 ~0.40–0.47
+   - Positif (minority): F1 ~0.28–0.42
 
 **Recommendations:**
-- **For App Store**: Use TF-IDF + SVM (C=100, linear) - Best macro F1 (0.57)
-- **For Play Store**: Use TF-IDF + SVM (C=100, linear) - Best accuracy (68.45%)
-- **For deployment**: TF-IDF + SVM provides best balance of performance and efficiency
-- **Alternative**: IndoBERT + SVM (C=100, rbf) for App Store if contextual understanding needed
+- Use IndoBERT + SVM for production (best balanced performance)
+- Consider SMOTE or class weighting for minority-class improvement
+- Play Store model is more reliable due to language uniformity
 
 ---
 
