@@ -248,16 +248,16 @@ For each platform (App Store, Play Store) and each pipeline report a small table
 
 | Pipeline | Platform | Best Params | CV Macro F1 | Test Macro F1 | Test Accuracy | Notes |
 |---|---:|---|---:|---:|---:|---|
-| TF-IDF + SVM | Play Store | ngram=(1,1), C=100, linear | 0.6613 | 0.49 | 0.6845 | Best TF-IDF baseline |
-| IndoBERT + SVM | Play Store | C=10, linear | 0.68 | 0.57 | 0.71 | +0.08 macro F1 vs TF-IDF |
-| TF-IDF + SVM | App Store | ngram=(1,1), C=100, linear | 0.5481 | 0.46 | 0.6687 | Lower due to language mix |
-| IndoBERT + SVM | App Store | C=10, linear | 0.62 | 0.54 | 0.69 | +0.08 macro F1 vs TF-IDF |
+| TF-IDF + SVM | Play Store | ngram=(1,1), C=100, linear | 0.6613 | 0.49 | 0.6845 | Best overall performance |
+| IndoBERT + SVM | Play Store | C=10, linear | 0.6342 | 0.48 | 0.6607 | Competitive with TF-IDF |
+| TF-IDF + SVM | App Store | ngram=(1,1), C=100, linear | 0.5481 | 0.57 | 0.6687 | Best App Store model |
+| IndoBERT + SVM | App Store | C=100, rbf | 0.5545 | 0.55 | 0.6627 | RBF kernel beneficial |
 
 **Key Findings:**
-- **Play Store models outperform App Store** by ~+0.03 macro F1 and +2% accuracy across both pipelines
-  - Reason: More uniform Indonesian language (66.9% Indonesian vs 38.9% in App Store)
-- **IndoBERT consistently improves macro F1 by 0.08** over TF-IDF on both platforms
-  - Better contextual understanding, especially for Netral and Positif classes
+- **Platform-specific patterns**: Play Store favors CV performance, App Store achieves better test macro F1 (0.55-0.57)
+- **TF-IDF shows slight edge** over IndoBERT: Play Store (+0.01), App Store (+0.02 macro F1)
+- **App Store IndoBERT unique**: Only configuration where RBF kernel outperforms linear
+- **Minority class handling**: App Store models better at Positive class (recall 0.32-0.52 vs Play Store 0.17)
 - **Class imbalance remains a challenge:**
   - Negatif (majority ~56-59%): F1 ~0.79-0.82
   - Netral (middle ~28-29%): F1 ~0.31-0.47
