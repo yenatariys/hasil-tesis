@@ -313,26 +313,27 @@ weighted avg       0.69      0.68      0.64       168
 - **Kernel**: linear
 
 **Performance**:
-- Best CV Macro F1: **0.5305**
-- Test Accuracy: **0.6310** (63.10%)
+- Best CV Macro F1: **0.5481**
+- Test Accuracy: **0.6687** (66.87%)
 
 **Test Set Classification Report**:
 ```
               precision    recall  f1-score   support
 
-    Negatif       0.61      0.97      0.75       99
-     Netral       0.71      0.20      0.31       48
-    Positif       0.75      0.14      0.24       21
+    Negatif       0.78      0.79      0.79       111
+     Netral       0.28      0.33      0.30       30
+    Positif       0.76      0.52      0.62       25
 
-    accuracy                           0.63       168
-   macro avg       0.69      0.44      0.43       168
-weighted avg       0.66      0.63      0.56       168
+    accuracy                           0.67       166
+   macro avg       0.61      0.55      0.57       166
+weighted avg       0.69      0.67      0.67       166
 ```
 
 **Key Observations**:
-- Similar pattern to Play Store: high recall for Negative (0.97), low for minorities
-- Lower overall performance compared to Play Store (macro F1: 0.43 vs 0.49)
-- Linear kernel again optimal
+- Strong precision for Negative (0.78) and Positive (0.76) classes
+- Improved recall for Positive class (0.52) compared to Play Store (0.17)
+- Macro F1 (0.57) shows better balanced performance than previous iteration
+- Linear kernel optimal, consistent with Play Store findings
 
 ### 4.5.2 IndoBERT + SVM Pipeline
 
@@ -377,30 +378,31 @@ weighted avg       0.64      0.66      0.61       168
 #### App Store Results
 
 **Best Hyperparameters**:
-- **C**: 10
-- **Kernel**: linear
+- **C**: 100
+- **Kernel**: rbf
 
 **Performance**:
-- Best CV Macro F1: **0.5123**
-- Test Accuracy: **0.6310** (63.10%)
+- Best CV Macro F1: **0.5545**
+- Test Accuracy: **0.6627** (66.27%)
 
 **Test Set Classification Report**:
 ```
               precision    recall  f1-score   support
 
-    Negatif       0.61      0.94      0.74       99
-     Netral       0.67      0.23      0.34       48
-    Positif       0.67      0.19      0.30       21
+    Negatif       0.74      0.89      0.81       111
+     Netral       0.50      0.33      0.40       30
+    Positif       0.67      0.32      0.43       25
 
-    accuracy                           0.63       168
-   macro avg       0.65      0.45      0.46       168
-weighted avg       0.63      0.63      0.58       168
+    accuracy                           0.66       166
+   macro avg       0.64      0.51      0.55       166
+weighted avg       0.68      0.66      0.66       166
 ```
 
 **Key Observations**:
-- Comparable to TF-IDF on App Store (macro F1: 0.46 vs 0.43)
-- Slight improvement in minority class precision
-- Same C value (10) as Play Store, suggesting consistent hyperparameter behavior
+- RBF kernel outperforms linear for IndoBERT embeddings (unique to App Store)
+- Better macro F1 (0.55) than TF-IDF (0.57), showing competitive performance
+- Improved minority class recall compared to previous: Neutral (0.33), Positive (0.32)
+- Higher C value (100) suggests embeddings benefit from less regularization on App Store data
 
 ---
 
@@ -412,34 +414,38 @@ weighted avg       0.63      0.63      0.58       168
 |----------|--------------|-------------|-------------|---------------|---------------|
 | Play Store | TF-IDF | C=100, linear | 0.6613 | 0.6845 | 0.49 |
 | Play Store | IndoBERT | C=10, linear | 0.6342 | 0.6607 | 0.48 |
-| App Store | TF-IDF | C=100, linear | 0.5305 | 0.6310 | 0.43 |
-| App Store | IndoBERT | C=10, linear | 0.5123 | 0.6310 | 0.46 |
+| App Store | TF-IDF | C=100, linear | 0.5481 | 0.6687 | 0.57 |
+| App Store | IndoBERT | C=100, rbf | 0.5545 | 0.6627 | 0.55 |
 
 ### 4.6.2 Key Findings
 
 1. **Feature Engineering Comparison**:
    - **Play Store**: TF-IDF slightly outperforms IndoBERT (0.49 vs 0.48 macro F1)
-   - **App Store**: IndoBERT slightly outperforms TF-IDF (0.46 vs 0.43 macro F1)
-   - **Conclusion**: Performance differences are minimal (<0.03); both approaches are competitive
+   - **App Store**: TF-IDF slightly outperforms IndoBERT (0.57 vs 0.55 macro F1)
+   - **Conclusion**: Both approaches achieve competitive performance (macro F1: 0.48-0.57); TF-IDF shows slight edge
 
 2. **Platform Differences**:
-   - Play Store models consistently outperform App Store models
-   - Possible reasons: Review writing styles, sentiment expression patterns, or data quality differences
+   - Play Store models show higher CV scores but App Store achieves better test macro F1 (0.55-0.57)
+   - App Store demonstrates improved minority class performance (Positive recall: 0.32-0.52 vs Play Store: 0.17)
+   - Possible reasons: Different review patterns, sentiment expression styles, or class distribution effects
 
 3. **Kernel Selection**:
-   - **Linear kernel** is optimal for both TF-IDF and IndoBERT across all experiments
-   - Indicates sentiment classes are approximately linearly separable in both feature spaces
-   - Non-linear kernels (RBF, polynomial) do not provide additional benefit
+   - **Linear kernel** optimal for TF-IDF across both platforms
+   - **Linear kernel** optimal for IndoBERT on Play Store
+   - **RBF kernel** optimal for IndoBERT on App Store (unique finding)
+   - App Store IndoBERT benefits from non-linear decision boundaries
 
 4. **Regularization Patterns**:
-   - TF-IDF requires stronger regularization (C=100)
-   - IndoBERT requires moderate regularization (C=10)
-   - Reflects different feature space properties: sparse vs dense, high vs low dimensional
+   - TF-IDF consistently requires C=100 (strong regularization)
+   - IndoBERT: C=10 (Play Store) vs C=100 (App Store)
+   - Platform-specific tuning needed for IndoBERT embeddings
+   - Reflects different feature space properties and data characteristics
 
 5. **Class Imbalance Impact**:
-   - All models struggle with minority classes (Neutral, Positive)
-   - Negative class dominates predictions (recall >0.90)
-   - Macro F1 (0.43-0.49) significantly lower than accuracy (0.63-0.68), indicating imbalanced performance
+   - App Store models show better minority class handling than Play Store
+   - Positive class recall: App Store (0.32-0.52) vs Play Store (0.17)
+   - Macro F1 ranges: App Store (0.55-0.57) vs Play Store (0.48-0.49)
+   - Test accuracy similar (66-68%) but App Store achieves more balanced predictions
 
 ### 4.6.3 Performance Visualization
 
@@ -460,8 +466,9 @@ weighted avg       0.63      0.63      0.58       168
 | Interpretability | High (feature weights) | Low (black-box embeddings) |
 
 **Practical Implications**:
-- For deployment with resource constraints: TF-IDF + SVM preferred
-- For maximum performance: Both approaches are competitive; choose based on infrastructure
+- For deployment with resource constraints: TF-IDF + SVM preferred (fast, accurate, low memory)
+- For maximum performance: TF-IDF achieves competitive or better results (0.57 App Store macro F1)
+- Platform-specific tuning: App Store benefits from RBF kernel with IndoBERT, Play Store uses linear
 
 ---
 
@@ -554,9 +561,10 @@ This modeling phase successfully implemented and compared two feature engineerin
 5. Play Store models outperform App Store models across all configurations
 
 **Recommended Model**:
-- **For Play Store**: TF-IDF + SVM (C=100, linear) - Best macro F1 (0.49)
-- **For App Store**: IndoBERT + SVM (C=10, linear) - Best macro F1 (0.46)
-- **For deployment**: TF-IDF + SVM - Lower computational requirements, comparable performance
+- **For Play Store**: TF-IDF + SVM (C=100, linear) - Best macro F1 (0.49), test accuracy 68.45%
+- **For App Store**: TF-IDF + SVM (C=100, linear) - Best macro F1 (0.57), test accuracy 66.87%
+- **Alternative (App Store)**: IndoBERT + SVM (C=100, rbf) - Macro F1 (0.55), test accuracy 66.27%
+- **For deployment**: TF-IDF + SVM - Best overall performance with lower computational requirements
 
 The models demonstrate practical applicability for sentiment monitoring of app reviews, with opportunities for improvement through class balancing techniques and feature engineering enhancements.
 
