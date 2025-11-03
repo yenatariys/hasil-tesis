@@ -174,7 +174,7 @@
     "platform": "App Store",
     "dataset_size": 838,
     "train_test_split": "80/20 (670/168)",
-    "stratified": false,
+    "stratified": true,
     "random_state": 42,
     "train_distribution": {
       "Negatif": {
