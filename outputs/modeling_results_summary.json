@@ -5,6 +5,34 @@
     "train_test_split": "80/20 (670/168)",
     "stratified": true,
     "random_state": 42,
+    "train_distribution": {
+      "Negatif": {
+        "count": 378,
+        "percentage": 56.4
+      },
+      "Netral": {
+        "count": 196,
+        "percentage": 29.3
+      },
+      "Positif": {
+        "count": 96,
+        "percentage": 14.3
+      }
+    },
+    "test_distribution": {
+      "Negatif": {
+        "count": 94,
+        "percentage": 56.0
+      },
+      "Netral": {
+        "count": 49,
+        "percentage": 29.2
+      },
+      "Positif": {
+        "count": 25,
+        "percentage": 14.9
+      }
+    },
     "tfidf_ngram_selection": {
       "tested_ngrams": [
         "(1,1)",
@@ -146,8 +174,36 @@
     "platform": "App Store",
     "dataset_size": 838,
     "train_test_split": "80/20 (670/168)",
-    "stratified": true,
+    "stratified": false,
     "random_state": 42,
+    "train_distribution": {
+      "Negatif": {
+        "count": 399,
+        "percentage": 59.6
+      },
+      "Netral": {
+        "count": 186,
+        "percentage": 27.8
+      },
+      "Positif": {
+        "count": 85,
+        "percentage": 12.7
+      }
+    },
+    "test_distribution": {
+      "Negatif": {
+        "count": 99,
+        "percentage": 58.9
+      },
+      "Netral": {
+        "count": 48,
+        "percentage": 28.6
+      },
+      "Positif": {
+        "count": 21,
+        "percentage": 12.5
+      }
+    },
     "tfidf_ngram_selection": {
       "tested_ngrams": [
         "(1,1)",
