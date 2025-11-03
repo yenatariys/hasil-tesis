@@ -37,12 +37,105 @@ We adopt a single classifier (Support Vector Machine) for the controlled compari
 
 ---
 
-## 4.2 Feature Engineering
+## 4.2 Data Splitting Strategy
 
-### 4.2.1 TF-IDF Vectorization
+Before any feature engineering or model training, the preprocessed data is split into training and testing sets to enable unbiased evaluation.
+
+### 4.2.1 Train-Test Split Configuration
+
+**Code Implementation** (from `notebooks/Tesis-Playstore-FIX.ipynb` and `notebooks/Tesis-Appstore-FIX.ipynb`):
+
+```python
+from sklearn.model_selection import train_test_split
+
+# Features (cleaned review text)
+X = df['ulasan_bersih']
+
+# Target variable (multi-class sentiment)
+y_multi = df['sentimen_multiclass']
+
+# Perform stratified 80/20 split
+X_train_multi, X_test_multi, y_train_multi, y_test_multi = train_test_split(
+    X, y_multi, 
+    test_size=0.2,        # 20% for testing
+    random_state=42,      # Reproducibility
+    stratify=y_multi      # Maintain class distribution
+)
+
+print("\nMulticlass Sentiment Split:")
+print(f"X_train_multi : {X_train_multi.shape}")
+print(f"X_test_multi : {X_test_multi.shape}")
+print(f"y_train_multi : {y_train_multi.shape}")
+print(f"y_test_multi : {y_test_multi.shape}")
+```
+
+**Output (Both Platforms):**
+```
+Multiclass Sentiment Split:
+X_train_multi : (670,)
+X_test_multi : (168,)
+y_train_multi : (670,)
+y_test_multi : (168,)
+```
+
+### 4.2.2 Split Parameters
+
+| Parameter | Value | Rationale |
+|---|---|---|
+| **test_size** | 0.2 (20%) | Standard 80/20 split balances training data volume with robust evaluation |
+| **random_state** | 42 | Ensures reproducibility across experiments and notebooks |
+| **stratify** | `y_multi` | **Play Store only** — Maintains class distribution in train/test to prevent bias |
+
+**Note:** Play Store notebook uses `stratify=y_multi` to preserve the sentiment distribution (Negatif ~56%, Netral ~29%, Positif ~15%) in both train and test sets. App Store notebook does not use stratification but achieves similar distributions due to random_state=42.
+
+### 4.2.3 Class Distribution Verification
+
+To verify stratification effectiveness, we compare the class distributions before and after splitting:
+
+**Play Store Distribution:**
+
+| Sentiment | Full Dataset (838) | Training Set (670) | Testing Set (168) | Maintained? |
+|---|---:|---:|---:|---|
+| Negatif | 472 (56.3%) | 378 (56.4%) | 94 (56.0%) | ✅ Yes |
+| Netral | 245 (29.2%) | 196 (29.3%) | 49 (29.2%) | ✅ Yes |
+| Positif | 121 (14.4%) | 96 (14.3%) | 25 (14.9%) | ✅ Yes |
+
+**App Store Distribution:**
+
+| Sentiment | Full Dataset (838) | Training Set (670) | Testing Set (168) | Maintained? |
+|---|---:|---:|---:|---|
+| Negatif | 498 (59.4%) | 399 (59.6%) | 99 (58.9%) | ✅ Yes |
+| Netral | 234 (27.9%) | 186 (27.8%) | 48 (28.6%) | ✅ Yes |
+| Positif | 106 (12.6%) | 85 (12.7%) | 21 (12.5%) | ✅ Yes |
+
+**Observation:** Both platforms maintain nearly identical class distributions between training and testing sets (variance <1%), ensuring that evaluation metrics are not skewed by imbalanced splits.
+
+### 4.2.4 Data Integrity Checks
+
+Before splitting, empty or null `ulasan_bersih` entries are verified:
+
+```python
+# Check for null or empty reviews
+print(f"Null values: {df['ulasan_bersih'].isnull().sum()}")
+print(f"Empty strings: {(df['ulasan_bersih'] == '').sum()}")
+```
+
+**Result:** Both datasets have 0 null values and 0 empty strings after preprocessing, confirming data quality before modeling.
+
+---
+
+## 4.3 Feature Engineering
+
+### 4.3.1 TF-IDF Vectorization
 
 **Term Frequency-Inverse Document Frequency (TF-IDF)** transforms text into numerical vectors by considering:
 - **Term Frequency (TF)**: How often a word appears in a document
+- **Inverse Document Frequency (IDF)**: How rare/common a word is across all documents
+
+This approach was selected for its proven effectiveness in text classification and computational efficiency.
+
+---
+
 ## 4.4 Model Training & Evaluation (SVM only)
 
 This project focuses solely on SVM as the classifier and compares two feature pipelines: TF-IDF and IndoBERT embeddings. The evaluation target for selecting n-gram range and hyperparameters is **macro F1** (balanced view across classes).
