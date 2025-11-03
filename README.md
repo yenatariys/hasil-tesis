@@ -1,71 +1,203 @@
-# Disney+ Hotstar Reviews Dashboard
+# Disney+ Hotstar Sentiment Analysis
+## Multi-Platform Review Analysis using Machine Learning
 
-Streamlit dashboard plus notebooks for exploring lexicon-labelled Disney+ Hotstar reviews from the App Store and Play Store. The app mirrors the preprocessing steps from the research notebooks, visualises sentiment distributions, and lets you import notebook-generated model metrics.
+![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
+![Status](https://img.shields.io/badge/Status-Active-success.svg)
 
-## Repository Layout
+### 📖 Project Overview
 
-- `dashboard.py` – thin entry point that forwards to `src.dashboard.main()`.
-- `src/dashboard.py` – full Streamlit application with filters, playground, and visualisations.
-- `data/lex_labeled_review_app.csv`, `data/lex_labeled_review_play.csv` – main datasets used by the dashboard.
-- `data/positive.tsv`, `data/negative.tsv` – lexicon weights used in the preprocessing playground.
-- `notebooks/Tesis_Appstore_FIX.ipynb`, `notebooks/Tesis_Playstore_FIX.ipynb` – end-to-end preprocessing and modelling workflows.
-- `outputs/exported_model_results_*.json` – optional GridSearchCV exports loaded by the dashboard for comparison views.
-- `run_dashboard.ps1` – helper script that activates `.venv` (when present) and launches Streamlit.
+This project performs comprehensive sentiment analysis on Disney+ Hotstar app reviews from both **App Store** and **Play Store** platforms. Using lexicon-based labeling and machine learning models (TF-IDF + SVM and IndoBERT + SVM), we analyze user sentiment patterns across platforms.
 
-## Dashboard Highlights
+---
 
-- **Sentiment overview** – stacked bars surface platform-level review counts with inline review/percentage labels.
-- **Trend explorer** – monthly line chart plus a period-comparison tab (2020–2022 vs 2023–2025) with counts and percentage annotations.
-- **Platform evaluation** – MAE/RMSE/correlation table accompanied by a counts-only rating-consistency heatmap with in-cell totals; download the metrics for single-platform views as CSV.
-- **Model performance** – load precomputed TF-IDF or IndoBERT JSON results, toggle whether imports override retraining, and retrain either pipeline directly from the UI.
-- **Prediction playground & filtered reviews** – test sentences against any loaded pipeline and inspect the curated review table (date, platform, rating, sentiment, original and processed text).
+## 📁 Project Structure
 
-## Prerequisites
-
-- Python 3.10 or newer (project tested on Python 3.12).
-- Windows PowerShell 5.1 or PowerShell 7 for the commands below.
-- Git (optional) if you plan to clone this repository instead of downloading a ZIP.
-
-## Setup (Windows PowerShell)
-
-```powershell
-cd C:\Users\Lenovo\Downloads\hasil-tesis
-python -m venv .venv
-.\.venv\Scripts\activate
-pip install --upgrade pip
-pip install -r requirements.txt
+```
+hasil-tesis/
+│
+├── data/                          # Data files
+│   ├── raw/                       # Original datasets
+│   ├── processed/                 # Cleaned and labeled data
+│   └── lexicon/                   # Sentiment lexicon dictionaries
+│
+├── notebooks/                     # Jupyter notebooks
+│   ├── appstore/                  # App Store analysis
+│   ├── playstore/                 # Play Store analysis
+│   └── exploratory/               # EDA notebooks
+│
+├── scripts/                       # Python scripts
+│   ├── data_preparation/          # Data cleaning and preparation
+│   ├── modeling/                  # Model training scripts
+│   ├── analysis/                  # Statistical analysis
+│   └── evaluation/                # Model evaluation scripts
+│
+├── outputs/                       # Generated outputs
+│   ├── models/                    # Trained models (.pkl files)
+│   ├── results/                   # Results (JSON, CSV)
+│   ├── reports/                   # Markdown reports
+│   └── visualizations/            # Plots and charts
+│
+├── docs/                          # Documentation
+│   ├── thesis/                    # Thesis chapters
+│   ├── technical/                 # CRISP-DM documentation
+│   └── guides/                    # User guides
+│
+├── dashboard/                     # Streamlit dashboard
+│   ├── pages/                     # Dashboard pages
+│   ├── utils/                     # Utility functions
+│   └── assets/                    # CSS, images
+│
+├── .streamlit/                    # Streamlit configuration
+├── requirements.txt               # Python dependencies
+└── README.md                      # This file
 ```
 
-To launch the dashboard once dependencies are installed:
+---
 
-```powershell
-streamlit run dashboard.py
-```
+## 🚀 Quick Start
 
-The default Streamlit port is 8501. Provide `--server.port 8502` (or another free port) if you need to avoid conflicts. Alternatively, run the helper script:
+### Prerequisites
+- Python 3.8 or higher
+- pip package manager
 
-```powershell
-.\run_dashboard.ps1
-```
+### Installation
 
-## Optional Dependencies
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/yenatariys/hasil-tesis.git
+   cd hasil-tesis
+   ```
 
-- `nltk`, `sastrawi`, and `wordcloud` enrich the preprocessing playground; install them via `pip install nltk Sastrawi wordcloud` if they are missing.
-- `transformers` and `torch` are only required when you want to recompute IndoBERT embeddings or fine-tune models locally. The dashboard works without them and will surface clear notices when advanced features are unavailable.
+2. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-## Working With Notebooks
+3. **Run the dashboard:**
+   ```bash
+   streamlit run dashboard/dashboard.py
+   ```
+   Or use PowerShell script:
+   ```powershell
+   .\dashboard\run_dashboard.ps1
+   ```
 
-Use the notebooks under `notebooks/` to retrain models, regenerate lexicon-labelled datasets, and export JSON summaries. Each notebook contains cells that produce `lex_labeled_review_*.csv` and `exported_model_results_*.json`. Place the refreshed CSVs in `data/` and JSON exports in `outputs/` before restarting the dashboard.
+---
 
-## Troubleshooting
+## 📊 Key Features
 
-- **Missing optional packages** – the dashboard falls back to simulated behaviour and surfaces callouts; install the optional packages listed above for full functionality.
-- **WordCloud import error** – remove the word cloud panel or install `wordcloud` via `pip install wordcloud`.
-- **Large dependency downloads** – skip `transformers` and `torch` if you only plan to visualise precomputed results.
-- **Auto-reload disabled** – ensure `.streamlit/config.toml` is present so Streamlit watches files for changes.
+### Data Analysis
+- ✅ Multi-platform data collection (App Store & Play Store)
+- ✅ Lexicon-based sentiment labeling
+- ✅ Comprehensive EDA and statistical analysis
+- ✅ Language distribution analysis
+- ✅ Temporal variation analysis
 
-## Helpful Commands
+### Machine Learning Models
+- ✅ TF-IDF + SVM (Support Vector Machine)
+- ✅ IndoBERT + SVM (Indonesian BERT embeddings)
+- ✅ Hyperparameter tuning with GridSearchCV
+- ✅ Stratified train-test split (80:20)
+- ✅ Class imbalance handling
 
-- Update Python packages: `pip install --upgrade -r requirements.txt`.
-- Clean Streamlit cache: `streamlit cache clear`.
-- Run unit checks without starting the UI: `python -m compileall src`.
+### Evaluation Metrics
+- ✅ Confusion matrices
+- ✅ Classification reports (Precision, Recall, F1-Score)
+- ✅ Cross-platform performance comparison
+- ✅ Rating vs Lexicon score correlation analysis
+- ✅ WordCloud visualization for each sentiment
+
+### Interactive Dashboard
+- ✅ Real-time sentiment visualization
+- ✅ Cross-platform comparison charts
+- ✅ Model performance metrics
+- ✅ Interactive filters and controls
+
+---
+
+## 📈 Results Summary
+
+### App Store Performance
+- **TF-IDF + SVM:** 66.87% accuracy, 0.57 macro F1-score
+- **IndoBERT + SVM:** 66.27% accuracy, 0.47 macro F1-score
+- **Initial Distribution:** 66% Negatif, 18% Netral, 16% Positif
+
+### Play Store Performance
+- **TF-IDF + SVM:** 73.21% accuracy, 0.38 macro F1-score
+- **IndoBERT + SVM:** 72.62% accuracy, 0.33 macro F1-score
+- **Initial Distribution:** 82% Negatif, 11% Netral, 7% Positif
+
+### Key Insights
+- ✅ Play Store has higher negative sentiment (82% vs 66%)
+- ✅ TF-IDF outperforms IndoBERT on macro F1-score
+- ✅ App Store shows better minority class performance
+- ✅ Both platforms struggle with Netral and Positif classes
+
+---
+
+## 📚 Documentation
+
+Comprehensive documentation available in `docs/` directory:
+
+- **Thesis Documentation:** `docs/thesis/`
+  - Complete thesis chapters with results
+  
+- **Technical Documentation:** `docs/technical/`
+  - CRISP-DM methodology phases
+  - Data preparation documentation
+  - Modeling phase documentation
+  
+- **User Guides:** `docs/guides/`
+  - Project overview and setup
+  - Analysis guides
+  - Result interpretation
+
+---
+
+## 🔧 Technologies Used
+
+- **Python 3.8+**
+- **Machine Learning:** scikit-learn, transformers (IndoBERT)
+- **Data Processing:** pandas, numpy
+- **Visualization:** matplotlib, seaborn, wordcloud
+- **Dashboard:** Streamlit
+- **NLP:** TF-IDF, BERT embeddings
+- **Version Control:** Git
+
+---
+
+## 📝 CRISP-DM Methodology
+
+This project follows the CRISP-DM (Cross-Industry Standard Process for Data Mining) methodology:
+
+1. ✅ **Business Understanding** - Sentiment analysis for app improvement
+2. ✅ **Data Understanding** - 838 reviews per platform, multi-class sentiment
+3. ✅ **Data Preparation** - Cleaning, lexicon labeling, stratified split
+4. ✅ **Modeling** - TF-IDF + SVM, IndoBERT + SVM with hyperparameter tuning
+5. ✅ **Evaluation** - Confusion matrices, classification reports, cross-platform analysis
+6. 🔄 **Deployment** - Interactive Streamlit dashboard
+
+---
+
+## 👤 Author
+
+**Yenatari S**
+- GitHub: [@yenatariys](https://github.com/yenatariys)
+
+---
+
+## 📄 License
+
+This project is part of a thesis research.
+
+---
+
+## 🙏 Acknowledgments
+
+- Indonesian sentiment lexicon for initial labeling
+- IndoBERT model for Indonesian language processing
+- Disney+ Hotstar for providing the review data platform
+
+---
+
+**Last Updated:** November 3, 2025
