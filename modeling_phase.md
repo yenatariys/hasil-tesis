@@ -84,9 +84,9 @@ y_test_multi : (168,)
 |---|---|---|
 | **test_size** | 0.2 (20%) | Standard 80/20 split balances training data volume with robust evaluation |
 | **random_state** | 42 | Ensures reproducibility across experiments and notebooks |
-| **stratify** | `y_multi` | **Play Store only** — Maintains class distribution in train/test to prevent bias |
+| **stratify** | `y_multi` | **Both platforms** — Maintains class distribution in train/test to prevent bias |
 
-**Note:** Play Store notebook uses `stratify=y_multi` to preserve the sentiment distribution (Negatif ~56%, Netral ~29%, Positif ~15%) in both train and test sets. App Store notebook does not use stratification but achieves similar distributions due to random_state=42.
+**Note:** Both Play Store and App Store notebooks use `stratify=y_multi` to preserve the sentiment distribution in both train and test sets, ensuring balanced class representation across splits.
 
 ### 4.2.3 Class Distribution Verification
 
