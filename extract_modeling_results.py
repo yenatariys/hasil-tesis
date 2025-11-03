@@ -107,7 +107,7 @@ appstore_results = {
     "platform": "App Store",
     "dataset_size": 838,
     "train_test_split": "80/20 (670/168)",
-    "stratified": False,  # Note: App Store doesn't use stratify parameter
+    "stratified": True,  # Now uses stratify=y_multi (updated)
     "random_state": 42,
     "train_distribution": {
         "Negatif": {"count": 399, "percentage": 59.6},
@@ -249,7 +249,7 @@ This document contains actual results from SVM experiments on Disney+ Hotstar se
 - Total samples: {appstore_results['dataset_size']}
 - Train: 670 (80%)
 - Test: 168 (20%)
-- Stratified: No
+- Stratified: Yes (stratify=y_multi)
 - Random state: {appstore_results['random_state']}
 
 **Train Set Class Distribution (n=670):**
