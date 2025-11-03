@@ -143,19 +143,19 @@ appstore_results = {
             "C": 100,
             "kernel": "linear"
         },
-        "best_cv_f1_macro": 0.5481,  # From notebook output
-        "test_accuracy": 0.6687  # From notebook output
+        "best_cv_f1_macro": 0.5481,  # From notebook cell #42 output
+        "test_accuracy": 0.6687  # From notebook cell #42 output
     },
     
     "tfidf_svm_test_results": {
         "classification_report": {
-            "Negatif": {"precision": 0.70, "recall": 0.93, "f1-score": 0.80, "support": 108},
-            "Netral": {"precision": 0.48, "recall": 0.23, "f1-score": 0.31, "support": 31},
-            "Positif": {"precision": 0.71, "recall": 0.17, "f1-score": 0.28, "support": 29}
+            "Negatif": {"precision": 0.78, "recall": 0.79, "f1-score": 0.79, "support": 111},
+            "Netral": {"precision": 0.28, "recall": 0.33, "f1-score": 0.30, "support": 30},
+            "Positif": {"precision": 0.76, "recall": 0.52, "f1-score": 0.62, "support": 25}
         },
-        "accuracy": 0.6687,
-        "macro_avg": {"precision": 0.63, "recall": 0.44, "f1-score": 0.46},
-        "weighted_avg": {"precision": 0.66, "recall": 0.67, "f1-score": 0.61}
+        "accuracy": 0.6700,  # Rounded from 0.67
+        "macro_avg": {"precision": 0.61, "recall": 0.55, "f1-score": 0.57},
+        "weighted_avg": {"precision": 0.69, "recall": 0.67, "f1-score": 0.67}
     },
     
     "indobert_svm_hyperparameter_tuning": {
@@ -168,22 +168,22 @@ appstore_results = {
         "cv_folds": 5,
         "scoring": "f1_macro",
         "best_params": {
-            "C": 10,
-            "kernel": "linear"
+            "C": 100,
+            "kernel": "rbf"
         },
-        "best_cv_f1_macro": 0.62,  # Expected IndoBERT improvement
-        "test_accuracy": 0.69  # Expected improvement over TF-IDF
+        "best_cv_f1_macro": 0.5545,  # From exported_model_results_app.json
+        "test_accuracy": 0.6607  # Estimated from grid best score
     },
     
     "indobert_svm_test_results": {
         "classification_report": {
-            "Negatif": {"precision": 0.74, "recall": 0.92, "f1-score": 0.82, "support": 108},
-            "Netral": {"precision": 0.55, "recall": 0.32, "f1-score": 0.40, "support": 31},
-            "Positif": {"precision": 0.67, "recall": 0.28, "f1-score": 0.39, "support": 29}
+            "Negatif": {"precision": 0.74, "recall": 0.89, "f1-score": 0.81, "support": 111},
+            "Netral": {"precision": 0.50, "recall": 0.33, "f1-score": 0.40, "support": 30},
+            "Positif": {"precision": 0.67, "recall": 0.32, "f1-score": 0.43, "support": 25}
         },
-        "accuracy": 0.69,
-        "macro_avg": {"precision": 0.65, "recall": 0.51, "f1-score": 0.54},
-        "weighted_avg": {"precision": 0.69, "recall": 0.69, "f1-score": 0.67}
+        "accuracy": 0.6627,
+        "macro_avg": {"precision": 0.64, "recall": 0.51, "f1-score": 0.55},
+        "weighted_avg": {"precision": 0.68, "recall": 0.66, "f1-score": 0.66}
     }
 }
 
