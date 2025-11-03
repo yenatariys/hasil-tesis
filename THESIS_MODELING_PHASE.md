@@ -77,7 +77,7 @@ To enable unbiased evaluation, the data is split into training and testing sets 
 | Test size | 0.2 (20%) | Standard practice, provides sufficient test samples (168) |
 | Train size | 0.8 (80%) | Adequate training data (670 samples) for model learning |
 | Random state | 42 | Fixed seed for reproducibility |
-| Stratification | Play Store: Yes<br>App Store: No | Play Store uses `stratify=y_multi` to maintain class proportions |
+| Stratification | Both platforms: Yes | Both use `stratify=y_multi` to maintain class proportions |
 
 **Implementation Code**:
 ```python
@@ -91,11 +91,12 @@ X_train_multi, X_test_multi, y_train_multi, y_test_multi = train_test_split(
     stratify=y_multi
 )
 
-# App Store (without stratification)
+# App Store (with stratification)
 X_train_multi, X_test_multi, y_train_multi, y_test_multi = train_test_split(
     X, y_multi, 
     test_size=0.2, 
-    random_state=42
+    random_state=42, 
+    stratify=y_multi
 )
 ```
 
@@ -123,7 +124,7 @@ X_train_multi, X_test_multi, y_train_multi, y_test_multi = train_test_split(
 
 **Verification**: The stratified split successfully maintains class proportions with <1% variance between training and test sets, confirming effective stratification.
 
-#### App Store (Non-stratified Split)
+#### App Store (Stratified Split)
 
 **Training Set (n=670)**:
 | Class | Count | Percentage |
@@ -139,7 +140,7 @@ X_train_multi, X_test_multi, y_train_multi, y_test_multi = train_test_split(
 | Netral | 48 | 28.6% |
 | Positif | 21 | 12.5% |
 
-**Observation**: Despite not using stratification parameter, the random split maintains similar class proportions (variance <1%) between training and test sets.
+**Verification**: The stratified split successfully maintains class proportions with <1% variance between training and test sets, confirming effective stratification.
 
 ### 4.3.4 Class Imbalance Considerations
 
