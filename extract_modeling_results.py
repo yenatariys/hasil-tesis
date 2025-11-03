@@ -21,6 +21,16 @@ playstore_results = {
     "train_test_split": "80/20 (670/168)",
     "stratified": True,
     "random_state": 42,
+    "train_distribution": {
+        "Negatif": {"count": 378, "percentage": 56.4},
+        "Netral": {"count": 196, "percentage": 29.3},
+        "Positif": {"count": 96, "percentage": 14.3}
+    },
+    "test_distribution": {
+        "Negatif": {"count": 94, "percentage": 56.0},
+        "Netral": {"count": 49, "percentage": 29.2},
+        "Positif": {"count": 25, "percentage": 14.9}
+    },
     
     "tfidf_ngram_selection": {
         "tested_ngrams": ["(1,1)", "(1,2)", "(1,3)"],
@@ -97,8 +107,18 @@ appstore_results = {
     "platform": "App Store",
     "dataset_size": 838,
     "train_test_split": "80/20 (670/168)",
-    "stratified": True,
+    "stratified": False,  # Note: App Store doesn't use stratify parameter
     "random_state": 42,
+    "train_distribution": {
+        "Negatif": {"count": 399, "percentage": 59.6},
+        "Netral": {"count": 186, "percentage": 27.8},
+        "Positif": {"count": 85, "percentage": 12.7}
+    },
+    "test_distribution": {
+        "Negatif": {"count": 99, "percentage": 58.9},
+        "Netral": {"count": 48, "percentage": 28.6},
+        "Positif": {"count": 21, "percentage": 12.5}
+    },
     
     "tfidf_ngram_selection": {
         "tested_ngrams": ["(1,1)", "(1,2)", "(1,3)"],
@@ -196,7 +216,55 @@ This document contains actual results from SVM experiments on Disney+ Hotstar se
 **Datasets:**
 - Play Store: {playstore_results['dataset_size']} reviews
 - App Store: {appstore_results['dataset_size']} reviews
-- Split: {playstore_results['train_test_split']} (train/test, stratified)
+- Split: {playstore_results['train_test_split']} (train/test)
+
+---
+
+## Data Splitting
+
+### Play Store
+**Configuration:**
+- Total samples: {playstore_results['dataset_size']}
+- Train: 670 (80%)
+- Test: 168 (20%)
+- Stratified: Yes (stratify=y_multi)
+- Random state: {playstore_results['random_state']}
+
+**Train Set Class Distribution (n=670):**
+| Class | Count | Percentage |
+|-------|-------|------------|
+| Negatif | {playstore_results['train_distribution']['Negatif']['count']} | {playstore_results['train_distribution']['Negatif']['percentage']:.1f}% |
+| Netral | {playstore_results['train_distribution']['Netral']['count']} | {playstore_results['train_distribution']['Netral']['percentage']:.1f}% |
+| Positif | {playstore_results['train_distribution']['Positif']['count']} | {playstore_results['train_distribution']['Positif']['percentage']:.1f}% |
+
+**Test Set Class Distribution (n=168):**
+| Class | Count | Percentage |
+|-------|-------|------------|
+| Negatif | {playstore_results['test_distribution']['Negatif']['count']} | {playstore_results['test_distribution']['Negatif']['percentage']:.1f}% |
+| Netral | {playstore_results['test_distribution']['Netral']['count']} | {playstore_results['test_distribution']['Netral']['percentage']:.1f}% |
+| Positif | {playstore_results['test_distribution']['Positif']['count']} | {playstore_results['test_distribution']['Positif']['percentage']:.1f}% |
+
+### App Store
+**Configuration:**
+- Total samples: {appstore_results['dataset_size']}
+- Train: 670 (80%)
+- Test: 168 (20%)
+- Stratified: No
+- Random state: {appstore_results['random_state']}
+
+**Train Set Class Distribution (n=670):**
+| Class | Count | Percentage |
+|-------|-------|------------|
+| Negatif | {appstore_results['train_distribution']['Negatif']['count']} | {appstore_results['train_distribution']['Negatif']['percentage']:.1f}% |
+| Netral | {appstore_results['train_distribution']['Netral']['count']} | {appstore_results['train_distribution']['Netral']['percentage']:.1f}% |
+| Positif | {appstore_results['train_distribution']['Positif']['count']} | {appstore_results['train_distribution']['Positif']['percentage']:.1f}% |
+
+**Test Set Class Distribution (n=168):**
+| Class | Count | Percentage |
+|-------|-------|------------|
+| Negatif | {appstore_results['test_distribution']['Negatif']['count']} | {appstore_results['test_distribution']['Negatif']['percentage']:.1f}% |
+| Netral | {appstore_results['test_distribution']['Netral']['count']} | {appstore_results['test_distribution']['Netral']['percentage']:.1f}% |
+| Positif | {appstore_results['test_distribution']['Positif']['count']} | {appstore_results['test_distribution']['Positif']['percentage']:.1f}% |
 
 ---
 
