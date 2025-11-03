@@ -50,8 +50,8 @@ From the Modeling phase (Chapter 4):
   - Play Store IndoBERT + SVM model (`svm_pipeline_bert_play.pkl`)
 
 - **Test Datasets:**
-  - App Store test set: 168 samples (20% stratified split)
-  - Play Store test set: 168 samples (20% stratified split)
+  - App Store test set: 166 samples (20% stratified split, after filtering 8 empty strings)
+  - Play Store test set: 159 samples (20% stratified split, after filtering 43 empty strings)
   - Preserved class distribution: Negatif, Netral, Positif
 
 - **Training Metadata:**

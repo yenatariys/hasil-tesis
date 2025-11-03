@@ -27,7 +27,9 @@ The evaluation employs multiple complementary approaches:
 - **Visual Analytics**: Word clouds to reveal linguistic patterns and user concerns
 - **Bias Analysis**: Assessment of prediction bias toward dominant classes
 
-All evaluations are conducted on stratified test sets (20% of data, 168 samples per platform) that were held out during the training phase to ensure unbiased performance assessment.
+All evaluations are conducted on stratified test sets (20% of data) that were held out during the training phase to ensure unbiased performance assessment.
+
+> **Note on Test Set Size:** After text preprocessing (stemming and cleaning), some reviews become empty strings and must be filtered before modeling. App Store has 8 empty strings (test set: 166 samples), and Play Store has 41 empty strings (test set: ~160 samples). See `docs/technical/DATA_FILTERING_NOTE.md` for details.
 
 ---
 
@@ -71,12 +73,12 @@ The stratified train-test split (80:20 ratio) preserves the class distribution i
 
 | Sentiment | App Store Count | App Store (%) | Play Store Count | Play Store (%) |
 |-----------|-----------------|---------------|------------------|----------------|
-| Negatif   | 111             | 66.07%        | 138              | 82.14%         |
-| Netral    | 30              | 17.86%        | 18               | 10.71%         |
-| Positif   | 27              | 16.07%        | 12               | 7.14%          |
-| **Total** | **168**         | **100.00%**   | **168**          | **100.00%**    |
+| Negatif   | 100             | 60.24%        | 93               | 58.49%         |
+| Netral    | 40              | 24.10%        | 46               | 28.93%         |
+| Positif   | 26              | 15.66%        | 20               | 12.58%         |
+| **Total** | **166**         | **100.00%**   | **159**          | **100.00%**    |
 
-The test set accurately reflects the full dataset distribution, confirming that stratified sampling successfully maintained class proportions. This consistency ensures that evaluation results are representative of the overall data characteristics.
+**Note:** The test set sizes reflect filtering of empty strings after preprocessing. App Store filtered 8 empty strings (830 samples → 664 train, 166 test), and Play Store filtered 43 empty strings (795 samples → 636 train, 159 test). The test set accurately reflects the filtered dataset distribution, confirming that stratified sampling successfully maintained class proportions. This consistency ensures that evaluation results are representative of the overall data characteristics.
 
 ---
 
@@ -90,35 +92,36 @@ Table 5.3 summarizes the primary performance indicators for all models across bo
 
 **Table 5.3: Overall Model Performance Comparison**
 
-| Platform   | Model            | Accuracy | Macro F1 | Weighted F1 |
-|------------|------------------|----------|----------|-------------|
-| App Store  | TF-IDF + SVM     | 66.87%   | 0.57     | 0.67        |
-| App Store  | IndoBERT + SVM   | 66.27%   | 0.47     | 0.64        |
-| Play Store | TF-IDF + SVM     | 73.21%   | 0.38     | 0.72        |
-| Play Store | IndoBERT + SVM   | 72.62%   | 0.33     | 0.71        |
+| Platform   | Model            | Accuracy | Macro F1 | Weighted F1 | Test Samples |
+|------------|------------------|----------|----------|-------------|--------------|
+| App Store  | TF-IDF + SVM     | 63.25%   | 0.54     | 0.63        | 166          |
+| App Store  | IndoBERT + SVM   | 64.46%   | 0.50     | 0.62        | 166          |
+| Play Store | TF-IDF + SVM     | 76.73%   | 0.73     | 0.77        | 159          |
+| Play Store | IndoBERT + SVM   | 67.92%   | 0.58     | 0.67        | 159          |
 
 #### Key Findings:
 
 **Accuracy Analysis:**
-- Play Store models achieve higher overall accuracy (73.21% and 72.62%) compared to App Store models (66.87% and 66.27%)
-- The 6.34-6.35 percentage point advantage for Play Store is primarily attributable to the dominant Negatif class (82.14% of test samples)
-- TF-IDF slightly outperforms IndoBERT on both platforms in terms of raw accuracy
+- Play Store models achieve significantly higher overall accuracy (76.73% and 67.92%) compared to App Store models (63.25% and 64.46%)
+- Play Store's TF-IDF model achieves the highest accuracy (76.73%), representing a 13.48 percentage point advantage over App Store TF-IDF
+- On App Store, IndoBERT slightly outperforms TF-IDF (64.46% vs 63.25%), but on Play Store, TF-IDF significantly outperforms IndoBERT (76.73% vs 67.92%)
 
 **Macro F1-Score Analysis:**
-- App Store models demonstrate substantially higher macro F1-scores (0.57 and 0.47) compared to Play Store models (0.38 and 0.33)
-- Macro F1-score, which treats all classes equally regardless of support, reveals that App Store models better handle minority classes
-- The 0.19-0.14 advantage for App Store indicates superior balanced performance across all sentiment categories
-- TF-IDF consistently achieves higher macro F1 than IndoBERT on both platforms
+- Play Store TF-IDF demonstrates the highest macro F1-score (0.73), indicating excellent balanced performance across all sentiment categories
+- TF-IDF consistently achieves higher macro F1 than IndoBERT on both platforms (App: 0.54 vs 0.50, Play: 0.73 vs 0.58)
+- Macro F1-score, which treats all classes equally regardless of support, reveals that TF-IDF better handles minority classes
+- The substantial gap between platforms for TF-IDF macro F1 (0.73 vs 0.54) suggests Play Store reviews have more distinguishable linguistic patterns
 
 **Weighted F1-Score Analysis:**
-- Weighted F1-scores favor Play Store models (0.72 and 0.71) over App Store models (0.67 and 0.64)
-- Weighted F1, which accounts for class imbalance by weighting each class by support, aligns more closely with accuracy
-- The convergence of weighted F1 and accuracy for Play Store confirms that high performance is concentrated in the dominant Negatif class
+- Weighted F1-scores favor Play Store TF-IDF model (0.77), followed by App Store models (0.63 and 0.62)
+- Weighted F1, which accounts for class imbalance by weighting each class by support, aligns closely with accuracy
+- The convergence of weighted F1 and accuracy for all models confirms consistent performance across evaluation metrics
 
 **Model Comparison:**
-- TF-IDF + SVM consistently outperforms IndoBERT + SVM across all metrics on both platforms
-- The performance gap is more pronounced for macro F1 (0.10 on App Store, 0.05 on Play Store), indicating TF-IDF's superior handling of minority classes
-- Despite IndoBERT's theoretical advantage in capturing contextual semantics, TF-IDF's simpler bag-of-words representation proves more effective for this task
+- TF-IDF + SVM outperforms IndoBERT + SVM when considering macro F1 (class-balanced metric) on both platforms
+- The performance gap is most pronounced on Play Store: TF-IDF achieves 0.73 macro F1 vs IndoBERT's 0.58 (0.15 difference)
+- Despite IndoBERT's theoretical advantage in capturing contextual semantics, TF-IDF's simpler bag-of-words representation proves more effective for this Indonesian sentiment classification task
+- IndoBERT shows slightly better accuracy on App Store but fails to maintain balanced performance across minority classes
 
 ### 5.3.2 TF-IDF + SVM Performance Analysis
 
@@ -130,37 +133,40 @@ The confusion matrix provides detailed insight into classification patterns, rev
 
 |                      | Predicted Negatif | Predicted Netral | Predicted Positif |
 |----------------------|-------------------|------------------|-------------------|
-| **Actual Negatif**   | 88                | 18               | 5                 |
-| **Actual Netral**    | 17                | 10               | 3                 |
-| **Actual Positif**   | 11                | 3                | 13                |
+| **Actual Negatif**   | 78                | 16               | 6                 |
+| **Actual Netral**    | 19                | 15               | 6                 |
+| **Actual Positif**   | 8                 | 6                | 12                |
 
 **Table 5.5: TF-IDF + SVM Confusion Matrix - Play Store**
 
 |                      | Predicted Negatif | Predicted Netral | Predicted Positif |
 |----------------------|-------------------|------------------|-------------------|
-| **Actual Negatif**   | 116               | 18               | 4                 |
-| **Actual Netral**    | 13                | 4                | 1                 |
-| **Actual Positif**   | 9                 | 2                | 1                 |
+| **Actual Negatif**   | 78                | 15               | 0                 |
+| **Actual Netral**    | 12                | 33               | 1                 |
+| **Actual Positif**   | 4                 | 5                | 11                |
 
 #### Confusion Matrix Insights:
 
 **App Store Patterns:**
-- Strong diagonal values for Negatif (88/111 = 79.3%) and Positif (13/27 = 48.1%) classes
-- Netral class shows weakest performance with only 10/30 (33.3%) correct predictions
-- Most common error: Misclassifying Netral as Negatif (17 cases), suggesting the model has difficulty distinguishing neutral language from negative language
-- Positif misclassifications are distributed: 11 classified as Negatif, 3 as Netral
+- Negatif class achieves 78/100 (78.0%) correct predictions, showing strong performance on the most common class
+- Netral class shows moderate performance with 15/40 (37.5%) correct predictions
+- Positif class achieves 12/26 (46.2%) correct predictions
+- Most common error: Misclassifying Netral as Negatif (19 cases), suggesting the model has difficulty distinguishing neutral language from negative language
+- Positif misclassifications are distributed: 8 classified as Negatif, 6 as Netral
 
 **Play Store Patterns:**
-- Excellent Negatif class performance (116/138 = 84.1% correct)
-- Severe difficulties with minority classes: Netral (4/18 = 22.2%) and Positif (1/12 = 8.3%)
-- Most Netral reviews misclassified as Negatif (13 cases), indicating strong negative bias
-- Most Positif reviews misclassified as Negatif (9 cases), with only 1 correct prediction
-- The model's bias toward the dominant class is evident in the heavy concentration of predictions in the Negatif column
+- Excellent Negatif class performance (78/93 = 83.9% correct)
+- Strong Netral class performance (33/46 = 71.7% correct), significantly better than App Store
+- Good Positif class performance (11/20 = 55.0% correct), much better than expected for a minority class
+- Most Netral reviews misclassified as Negatif (12 cases), but overall Netral performance is strong
+- Positif misclassifications are modest: 4 classified as Negatif, 5 as Netral
+- The model demonstrates balanced performance across all classes despite initial class imbalance in training data
 
 **Cross-Platform Comparison:**
-- Play Store achieves better Negatif recall (84.1% vs 79.3%) due to abundant training data
-- App Store demonstrates dramatically better minority class performance (Netral: 33.3% vs 22.2%, Positif: 48.1% vs 8.3%)
-- Both platforms show a tendency to misclassify ambiguous cases as Negatif, but this bias is more severe on Play Store
+- Play Store achieves better performance on all classes: Negatif (83.9% vs 78.0%), Netral (71.7% vs 37.5%), Positif (55.0% vs 46.2%)
+- Play Store's superior performance suggests more distinguishable linguistic patterns or better feature representation
+- Unlike previous expectations, Play Store does NOT show severe bias toward the dominant class
+- App Store shows more confusion between classes, particularly struggling with Netral classification
 
 #### 5.3.2.2 Per-Class Performance Metrics
 
@@ -170,42 +176,44 @@ Table 5.6 provides detailed per-class metrics for TF-IDF + SVM, enabling granula
 
 | Platform   | Class    | Precision | Recall | F1-Score | Support |
 |------------|----------|-----------|--------|----------|---------|
-| App Store  | Negatif  | 0.78      | 0.79   | 0.79     | 111     |
-| App Store  | Netral   | 0.28      | 0.33   | 0.30     | 30      |
-| App Store  | Positif  | 0.76      | 0.52   | 0.62     | 27      |
-| Play Store | Negatif  | 0.84      | 0.84   | 0.84     | 138     |
-| Play Store | Netral   | 0.17      | 0.22   | 0.19     | 18      |
-| Play Store | Positif  | 0.17      | 0.08   | 0.11     | 12      |
+| App Store  | Negatif  | 0.74      | 0.78   | 0.76     | 100     |
+| App Store  | Netral   | 0.41      | 0.38   | 0.39     | 40      |
+| App Store  | Positif  | 0.50      | 0.46   | 0.48     | 26      |
+| Play Store | Negatif  | 0.83      | 0.84   | 0.83     | 93      |
+| Play Store | Netral   | 0.62      | 0.72   | 0.67     | 46      |
+| Play Store | Positif  | 0.92      | 0.55   | 0.69     | 20      |
 
 #### Detailed Class Analysis:
 
 **Negatif Class (Dominant Class):**
-- Play Store: 0.84 F1-score (best performance across all classes and platforms)
-- App Store: 0.79 F1-score (strong but slightly lower due to less dominant class proportion)
-- Both platforms show balanced precision-recall (difference < 0.01), indicating stable predictions
-- High support (111-138 samples) enables robust learning
+- Play Store: 0.83 F1-score (best performance for Negatif across both platforms)
+- App Store: 0.76 F1-score (strong performance)
+- Both platforms show balanced precision-recall, indicating stable predictions
+- High support (93-100 samples) enables robust learning
+- Play Store achieves 7-point F1 advantage (0.83 vs 0.76)
 
 **Netral Class (Middle Class):**
-- App Store: 0.30 F1-score with low precision (0.28) but moderate recall (0.33)
-- Play Store: 0.19 F1-score with very low precision (0.17) and recall (0.22)
-- Low precision indicates many false positives (other classes incorrectly labeled as Netral)
-- Low recall indicates many Netral reviews misclassified as other classes (primarily Negatif)
-- App Store's 11-point F1 advantage (0.30 vs 0.19) demonstrates benefit of more balanced training data
+- Play Store: 0.67 F1-score with good precision (0.62) and recall (0.72)
+- App Store: 0.39 F1-score with low precision (0.41) and recall (0.38)
+- Play Store achieves 28-point F1 advantage (0.67 vs 0.39), indicating superior Netral classification
+- Play Store's higher recall (0.72) shows the model successfully identifies most Netral reviews
+- App Store struggles with Netral classification despite having more Netral training samples (40 vs 46 in test set)
+- Play Store's superior Netral performance suggests more distinguishable linguistic patterns
 
 **Positif Class (Minority Class):**
-- App Store: 0.62 F1-score with high precision (0.76) but moderate recall (0.52)
-- Play Store: 0.11 F1-score with very low precision (0.17) and recall (0.08)
-- App Store achieves 51-point F1 advantage (0.62 vs 0.11), the largest cross-platform gap for any class
-- High precision on App Store (0.76) suggests that when the model predicts Positif, it is usually correct
-- Extremely low recall on Play Store (0.08) indicates the model rarely predicts Positif, even when appropriate
-- Play Store's severe class imbalance (7% Positif) leads to model bias that sacrifices minority class performance
+- Play Store: 0.69 F1-score with very high precision (0.92) but moderate recall (0.55)
+- App Store: 0.48 F1-score with moderate precision (0.50) and recall (0.46)
+- Play Store achieves 21-point F1 advantage (0.69 vs 0.48)
+- Remarkably high precision on Play Store (0.92) suggests that when the model predicts Positif, it is almost always correct
+- Play Store's superior performance on minority class contradicts expectations given severe class imbalance in training data (12.58% Positif)
+- App Store shows balanced but moderate performance on Positif class
 
 **Performance Winners:**
-- Negatif: Play Store (+0.05 F1)
-- Netral: App Store (+0.11 F1)
-- Positif: App Store (+0.51 F1)
+- Negatif: Play Store (+0.07 F1)
+- Netral: Play Store (+0.28 F1)
+- Positif: Play Store (+0.21 F1)
 
-The TF-IDF + SVM model demonstrates strong overall performance but exhibits platform-dependent characteristics driven by class distribution differences.
+Surprisingly, Play Store TF-IDF + SVM outperforms App Store across ALL sentiment classes, suggesting that Play Store reviews have more distinguishable linguistic patterns or better feature representation despite initial class imbalance concerns.
 
 ### 5.3.3 IndoBERT + SVM Performance Analysis
 
@@ -215,37 +223,40 @@ The TF-IDF + SVM model demonstrates strong overall performance but exhibits plat
 
 |                      | Predicted Negatif | Predicted Netral | Predicted Positif |
 |----------------------|-------------------|------------------|-------------------|
-| **Actual Negatif**   | 93                | 13               | 5                 |
-| **Actual Netral**    | 23                | 4                | 3                 |
-| **Actual Positif**   | 13                | 4                | 10                |
+| **Actual Negatif**   | 86                | 7                | 7                 |
+| **Actual Netral**    | 26                | 14               | 0                 |
+| **Actual Positif**   | 19                | 0                | 7                 |
 
 **Table 5.8: IndoBERT + SVM Confusion Matrix - Play Store**
 
 |                      | Predicted Negatif | Predicted Netral | Predicted Positif |
 |----------------------|-------------------|------------------|-------------------|
-| **Actual Negatif**   | 118               | 16               | 4                 |
-| **Actual Netral**    | 14                | 3                | 1                 |
-| **Actual Positif**   | 10                | 2                | 0                 |
+| **Actual Negatif**   | 76                | 14               | 3                 |
+| **Actual Netral**    | 20                | 26               | 0                 |
+| **Actual Positif**   | 9                 | 5                | 6                 |
 
 #### Confusion Matrix Insights:
 
 **App Store Patterns:**
-- Negatif class achieves 93/111 (83.8%) correct predictions, higher than TF-IDF (79.3%)
-- Netral class shows very weak performance with only 4/30 (13.3%) correct, worse than TF-IDF (33.3%)
-- Positif class achieves 10/27 (37.0%) correct, significantly lower than TF-IDF (48.1%)
-- Strong negative bias: 23 Netral and 13 Positif reviews misclassified as Negatif
+- Negatif class achieves 86/100 (86.0%) correct predictions, higher than TF-IDF (78.0%)
+- Netral class shows weak performance with only 14/40 (35.0%) correct, similar to TF-IDF (37.5%)
+- Positif class achieves 7/26 (26.9%) correct, significantly lower than TF-IDF (46.2%)
+- Strong negative bias: 26 Netral and 19 Positif reviews misclassified as Negatif
+- Notably, NO Netral or Positif reviews were confused with each other, suggesting distinct but negative-biased boundaries
 
 **Play Store Patterns:**
-- Excellent Negatif performance: 118/138 (85.5%) correct, slightly better than TF-IDF (84.1%)
-- Extremely poor minority class performance: Netral 3/18 (16.7%), Positif 0/12 (0%)
-- Complete failure on Positif class: All 12 Positif reviews misclassified (10 as Negatif, 2 as Netral)
-- The model shows extreme bias toward the dominant Negatif class
+- Good Negatif performance: 76/93 (81.7%) correct, slightly lower than TF-IDF (83.9%)
+- Moderate Netral performance: 26/46 (56.5%) correct, lower than TF-IDF (71.7%)
+- Weak Positif performance: 6/20 (30.0%) correct, much lower than TF-IDF (55.0%)
+- The model shows moderate negative bias with 20 Netral and 9 Positif reviews misclassified as Negatif
+- Unlike App Store, Play Store IndoBERT shows some confusion between all class pairs
 
 **IndoBERT vs TF-IDF Comparison:**
-- IndoBERT achieves slightly better Negatif recall on both platforms
-- IndoBERT performs substantially worse on minority classes (Netral, Positif)
-- IndoBERT shows stronger bias toward the dominant class, particularly evident on Play Store where Positif recall is 0%
-- Despite theoretical advantages of contextual embeddings, IndoBERT fails to leverage semantic understanding for minority class identification
+- IndoBERT achieves higher Negatif recall on App Store (86.0% vs 78.0%) but lower on Play Store (81.7% vs 83.9%)
+- IndoBERT performs substantially worse on minority classes across both platforms
+- IndoBERT shows stronger bias toward the dominant Negatif class, especially on App Store
+- Despite theoretical advantages of contextual embeddings, IndoBERT fails to leverage semantic understanding for balanced multiclass classification
+- TF-IDF's simpler bag-of-words representation proves more effective for handling class imbalance
 
 #### 5.3.3.2 Per-Class Performance Metrics
 
@@ -253,56 +264,58 @@ The TF-IDF + SVM model demonstrates strong overall performance but exhibits plat
 
 | Platform   | Class    | Precision | Recall | F1-Score | Support |
 |------------|----------|-----------|--------|----------|---------|
-| App Store  | Negatif  | 0.72      | 0.84   | 0.78     | 111     |
-| App Store  | Netral   | 0.19      | 0.13   | 0.16     | 30      |
-| App Store  | Positif  | 0.56      | 0.40   | 0.47     | 27      |
-| Play Store | Negatif  | 0.83      | 0.86   | 0.84     | 138     |
-| Play Store | Netral   | 0.14      | 0.17   | 0.15     | 18      |
-| Play Store | Positif  | 0.00      | 0.00   | 0.00     | 12      |
+| App Store  | Negatif  | 0.72      | 0.86   | 0.78     | 100     |
+| App Store  | Netral   | 0.48      | 0.35   | 0.41     | 40      |
+| App Store  | Positif  | 0.41      | 0.27   | 0.33     | 26      |
+| Play Store | Negatif  | 0.72      | 0.82   | 0.77     | 93      |
+| Play Store | Netral   | 0.58      | 0.57   | 0.57     | 46      |
+| Play Store | Positif  | 0.67      | 0.30   | 0.41     | 20      |
 
 #### Detailed Class Analysis:
 
 **Negatif Class:**
-- Play Store: 0.84 F1-score (tied with TF-IDF)
-- App Store: 0.78 F1-score (same as TF-IDF)
-- IndoBERT matches TF-IDF performance on the dominant class
-- Higher recall (0.84 and 0.86) but lower precision (0.72 and 0.83) compared to TF-IDF, indicating more aggressive Negatif predictions
+- Play Store: 0.77 F1-score (lower than TF-IDF's 0.83)
+- App Store: 0.78 F1-score (higher than TF-IDF's 0.76)
+- IndoBERT achieves comparable performance to TF-IDF on the dominant class
+- Higher recall on App Store (0.86 vs TF-IDF 0.78) but lower precision (0.72), indicating more aggressive Negatif predictions
+- On Play Store, both precision and recall are lower than TF-IDF
 
 **Netral Class:**
-- App Store: 0.16 F1-score (vs TF-IDF 0.30, -0.14 difference)
-- Play Store: 0.15 F1-score (vs TF-IDF 0.19, -0.04 difference)
-- IndoBERT shows deteriorated performance on Netral class compared to TF-IDF
-- Very low precision and recall on both platforms indicate systematic difficulties
+- Play Store: 0.57 F1-score (lower than TF-IDF's 0.67, -0.10 difference)
+- App Store: 0.41 F1-score (higher than TF-IDF's 0.39, +0.02 difference)
+- IndoBERT shows mixed performance on Netral class
+- Play Store achieves reasonable performance (0.57) but still underperforms TF-IDF
+- App Store shows slightly better Netral performance than TF-IDF
 
 **Positif Class:**
-- App Store: 0.47 F1-score (vs TF-IDF 0.62, -0.15 difference)
-- Play Store: 0.00 F1-score (vs TF-IDF 0.11, -0.11 difference)
-- **Complete failure on Play Store**: Zero precision, recall, and F1-score
-- App Store shows degraded but non-zero performance
-- The inability to identify positive sentiment on Play Store is a critical model failure
+- Play Store: 0.41 F1-score (lower than TF-IDF's 0.69, -0.28 difference)
+- App Store: 0.33 F1-score (lower than TF-IDF's 0.48, -0.15 difference)
+- IndoBERT underperforms TF-IDF on Positif class on both platforms
+- Play Store shows very high precision (0.67) but low recall (0.30), suggesting conservative Positif predictions
+- App Store shows balanced but low precision and recall for Positif class
 
 **IndoBERT Performance Summary:**
-- Matches TF-IDF on dominant class (Negatif)
-- Underperforms TF-IDF on all minority classes
-- Shows stronger bias toward dominant class
-- Despite deeper semantic understanding, fails to leverage contextual information for minority class discrimination
-- The complete Positif class failure on Play Store (0.00 F1) represents the worst per-class result across all models
+- Achieves comparable performance to TF-IDF on dominant class (Negatif)
+- Underperforms TF-IDF on minority classes, especially Positif
+- Shows moderate performance on Netral class on both platforms
+- Despite deeper semantic understanding, fails to fully leverage contextual information for balanced multiclass classification
+- The largest performance gap is on Play Store Positif class (-0.28 F1 compared to TF-IDF)
 
 ### 5.3.4 Model Performance Summary
 
 **Table 5.10: Best Model per Platform and Class**
 
-| Platform   | Overall Winner       | Negatif Winner    | Netral Winner     | Positif Winner    |
-|------------|----------------------|-------------------|-------------------|-------------------|
-| App Store  | **TF-IDF + SVM**     | Tie (0.78)        | **TF-IDF** (0.30) | **TF-IDF** (0.62) |
-| Play Store | **TF-IDF + SVM**     | Tie (0.84)        | **TF-IDF** (0.19) | **TF-IDF** (0.11) |
+| Platform   | Overall Winner       | Negatif Winner       | Netral Winner     | Positif Winner    |
+|------------|----------------------|----------------------|-------------------|-------------------|
+| App Store  | **IndoBERT** (0.65)  | **IndoBERT** (0.78)  | **IndoBERT** (0.41) | **TF-IDF** (0.48) |
+| Play Store | **TF-IDF + SVM** (0.77) | **TF-IDF** (0.83)    | **TF-IDF** (0.67) | **TF-IDF** (0.69) |
 
 **Key Evaluation Conclusions:**
-1. TF-IDF + SVM is the clear winner for both platforms based on macro F1-score
-2. TF-IDF handles class imbalance better than IndoBERT
-3. IndoBERT's advantage in capturing contextual semantics does not translate to better sentiment classification performance
-4. Play Store's severe class imbalance challenges both models but affects IndoBERT more severely
-5. App Store's more balanced distribution enables better minority class learning for both models
+1. **TF-IDF + SVM is the recommended model** based on macro F1-score (class-balanced metric): TF-IDF achieves 0.54 (App Store) and 0.73 (Play Store) vs IndoBERT's 0.50 and 0.58
+2. TF-IDF handles minority classes significantly better, particularly on Play Store
+3. IndoBERT achieves slightly higher accuracy on App Store (0.65 vs 0.63) but fails to maintain balanced performance across all classes
+4. Play Store TF-IDF outperforms all other models across ALL sentiment classes, achieving the best overall performance
+5. TF-IDF's simpler bag-of-words representation proves more effective than IndoBERT's contextual embeddings for this Indonesian sentiment classification task
 
 ---
 
@@ -316,12 +329,12 @@ This section analyzes the predicted sentiment distribution on the test set and c
 
 | Platform   | Sentiment | Ground Truth | GT %   | TF-IDF Pred | TF-IDF % | IndoBERT Pred | IndoBERT % |
 |------------|-----------|--------------|--------|-------------|----------|---------------|------------|
-| App Store  | Negatif   | 111          | 66.07% | 116         | 69.05%   | 129           | 76.79%     |
-| App Store  | Netral    | 30           | 17.86% | 31          | 18.45%   | 21            | 12.50%     |
-| App Store  | Positif   | 27           | 16.07% | 21          | 12.50%   | 18            | 10.71%     |
-| Play Store | Negatif   | 138          | 82.14% | 138         | 82.14%   | 142           | 84.52%     |
-| Play Store | Netral    | 18           | 10.71% | 24          | 14.29%   | 21            | 12.50%     |
-| Play Store | Positif   | 12           | 7.14%  | 6           | 3.57%    | 5             | 2.98%      |
+| App Store  | Negatif   | 100          | 60.24% | 105         | 63.25%   | 131           | 78.92%     |
+| App Store  | Netral    | 40           | 24.10% | 37          | 22.29%   | 21            | 12.65%     |
+| App Store  | Positif   | 26           | 15.66% | 24          | 14.46%   | 14            | 8.43%      |
+| Play Store | Negatif   | 93           | 58.49% | 94          | 59.12%   | 105           | 66.04%     |
+| Play Store | Netral    | 46           | 28.93% | 53          | 33.33%   | 45            | 28.30%     |
+| Play Store | Positif   | 20           | 12.58% | 12          | 7.55%    | 9             | 5.66%      |
 
 ### 5.4.2 Prediction Bias Analysis
 
@@ -329,30 +342,30 @@ This section analyzes the predicted sentiment distribution on the test set and c
 
 | Platform   | Model          | Negatif Bias | Netral Bias | Positif Bias |
 |------------|----------------|--------------|-------------|--------------|
-| App Store  | TF-IDF + SVM   | +2.98%       | +0.59%      | -3.57%       |
-| App Store  | IndoBERT + SVM | +10.72%      | -5.36%      | -5.36%       |
-| Play Store | TF-IDF + SVM   | 0.00%        | +3.58%      | -3.57%       |
-| Play Store | IndoBERT + SVM | +2.38%       | +1.79%      | -4.16%       |
+| App Store  | TF-IDF + SVM   | +3.01%       | -1.81%      | -1.20%       |
+| App Store  | IndoBERT + SVM | +18.68%      | -11.45%     | -7.23%       |
+| Play Store | TF-IDF + SVM   | +0.63%       | +4.40%      | -5.03%       |
+| Play Store | IndoBERT + SVM | +7.55%       | -0.63%      | -6.92%       |
 
 #### Key Bias Observations:
 
 **App Store Bias Patterns:**
-- TF-IDF shows minimal bias (+2.98% Negatif, +0.59% Netral, -3.57% Positif), indicating good distributional alignment
-- IndoBERT shows strong negative bias (+10.72% Negatif), significantly over-predicting negative sentiment
-- Both models under-predict Positif sentiment (-3.57% and -5.36%)
-- IndoBERT's bias is 3.6x stronger than TF-IDF for Negatif class
+- TF-IDF shows minimal bias (+3.01% Negatif, -1.81% Netral, -1.20% Positif), indicating excellent distributional alignment
+- IndoBERT shows very strong negative bias (+18.68% Negatif), severely over-predicting negative sentiment
+- IndoBERT significantly under-predicts Netral (-11.45%) and Positif (-7.23%) sentiment
+- IndoBERT's bias is 6.2x stronger than TF-IDF for Negatif class, representing a critical model deficiency
 
 **Play Store Bias Patterns:**
-- TF-IDF achieves perfect Negatif alignment (0.00% bias), a remarkable achievement given the 82% class dominance
-- TF-IDF slightly over-predicts Netral (+3.58%) and under-predicts Positif (-3.57%)
-- IndoBERT shows mild positive bias across Negatif (+2.38%) and Netral (+1.79%)
-- Both models severely under-predict Positif class, with only 3.57% and 2.98% of predictions being positive (vs 7.14% ground truth)
+- TF-IDF shows minimal Negatif bias (+0.63%), demonstrating excellent calibration
+- TF-IDF slightly over-predicts Netral (+4.40%) and under-predicts Positif (-5.03%)
+- IndoBERT shows moderate negative bias (+7.55%) and significantly under-predicts Positif (-6.92%)
+- Both models under-predict Positif class, but TF-IDF maintains better overall balance
 
 **Cross-Platform Comparison:**
-- **App Store IndoBERT shows the strongest negative bias** (+10.72%), indicating the model's tendency to default to the dominant class
-- **Play Store TF-IDF achieves perfect Negatif alignment**, demonstrating exceptional calibration despite severe class imbalance
-- **Positif class is consistently under-predicted** across all models and platforms, reflecting the challenges of minority class identification
-- **TF-IDF maintains better distributional balance** than IndoBERT on both platforms
+- **App Store IndoBERT shows the strongest negative bias** (+18.68%), indicating severe tendency to default to the dominant class
+- **Play Store TF-IDF achieves near-perfect calibration** (+0.63% Negatif bias), demonstrating exceptional distributional alignment
+- **Positif class is consistently under-predicted** across all models and platforms (-1.20% to -6.92%), reflecting the inherent challenges of minority class identification
+- **TF-IDF maintains significantly better distributional balance** than IndoBERT on both platforms (max bias: 5.03% vs 18.68%)
 
 ### 5.4.3 Implications for Deployment
 
