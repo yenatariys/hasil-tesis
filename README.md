@@ -82,6 +82,20 @@ hasil-tesis/
    .\dashboard\run_dashboard.ps1
    ```
 
+4. **Secure remote access with DevTunnel (Optional):**
+   For GitHub-authenticated access on port 8300:
+   ```bash
+   # Install devtunnel
+   curl -sL https://aka.ms/DevTunnelCliInstall | bash
+   
+   # Login with GitHub
+   devtunnel user login --provider github
+   
+   # Use the automated script
+   ./scripts/setup_devtunnel.sh
+   ```
+   See [DEVTUNNEL_SETUP.md](DEVTUNNEL_SETUP.md) and [DEPLOYMENT_INSTRUCTIONS.md](DEPLOYMENT_INSTRUCTIONS.md) for detailed instructions.
+
 ---
 
 ## 📊 Key Features
