@@ -46,7 +46,7 @@ except ImportError:  # pragma: no cover
 try:  # Optional heavy dependencies for transformer-based embeddings
     import torch
     from transformers import AutoModel, AutoTokenizer
-except ImportError:  # pragma: no cover - handled gracefully in UI
+except Exception:  # pragma: no cover - handle ImportError and runtime loader issues gracefully
     torch = None
     AutoModel = AutoTokenizer = None
 
@@ -89,14 +89,23 @@ button[kind="secondary"] {
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = REPO_ROOT / "data"
 OUTPUTS_DIR = REPO_ROOT / "outputs"
+_DATA_CANDIDATE_FOLDERS: tuple[Path, ...] = (
+    DATA_DIR,
+    DATA_DIR / "processed",
+    DATA_DIR / "translated",
+    DATA_DIR / "raw",
+    REPO_ROOT,
+)
 
 
 def _resolve_csv(filename: str) -> Path:
-    candidates = [DATA_DIR / filename, REPO_ROOT / filename]
-    for candidate in candidates:
+    for folder in _DATA_CANDIDATE_FOLDERS:
+        candidate = folder / filename
         if candidate.exists():
             return candidate
-    return DATA_DIR / filename  # default so the error message names expected location
+
+    # default so the error message names expected primary location
+    return DATA_DIR / filename
 
 
 def _discover_exported_jsons() -> List[Path]:
