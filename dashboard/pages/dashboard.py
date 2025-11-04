@@ -43,12 +43,34 @@ try:  # Optional Indonesian stemmer
 except ImportError:  # pragma: no cover
     StemmerFactory = None
 
-try:  # Optional heavy dependencies for transformer-based embeddings
-    import torch
-    from transformers import AutoModel, AutoTokenizer
-except Exception:  # pragma: no cover - handle ImportError and runtime loader issues gracefully
-    torch = None
-    AutoModel = AutoTokenizer = None
+# Defer importing heavy transformer and torch dependencies until actually needed.
+# This avoids expensive initialization during Streamlit cold start when transformer
+# features are optional.
+torch = None
+AutoModel = AutoTokenizer = None
+
+
+def _ensure_transformers_imported() -> None:
+    """Attempt a lazy import of torch and transformers when required.
+
+    This function sets the module-level names ``torch``, ``AutoModel``, and
+    ``AutoTokenizer``. It is safe to call multiple times.
+    """
+    global torch, AutoModel, AutoTokenizer
+
+    if AutoModel is not None and AutoTokenizer is not None and torch is not None:
+        return
+
+    try:
+        import torch as _torch
+        from transformers import AutoModel as _AutoModel, AutoTokenizer as _AutoTokenizer
+    except Exception:
+        # Leave globals as None to indicate transformer stack unavailable.
+        return
+
+    torch = _torch
+    AutoModel = _AutoModel
+    AutoTokenizer = _AutoTokenizer
 
 try:  # Optional WordCloud dependency
     from wordcloud import STOPWORDS, WordCloud
@@ -86,7 +108,7 @@ button[kind="secondary"] {
 """
 
 # Prefer data/ and outputs/ layout but fall back to repo root for backwards compatibility
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]  # repository root (two levels above pages/)
 DATA_DIR = REPO_ROOT / "data"
 OUTPUTS_DIR = REPO_ROOT / "outputs"
 _DATA_CANDIDATE_FOLDERS: tuple[Path, ...] = (
@@ -1549,6 +1571,7 @@ def _train_tfidf_svm(texts: Tuple[str, ...], labels: Tuple[str, ...], random_sta
 
 @st.cache_resource(show_spinner=False)
 def _load_transformer(model_name: str):
+    _ensure_transformers_imported()
     if AutoTokenizer is None or AutoModel is None or torch is None:
         raise ImportError("transformers and torch are required for IndoBERT embeddings.")
     tokenizer = AutoTokenizer.from_pretrained(model_name)
