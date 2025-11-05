@@ -841,11 +841,15 @@ This section provides a systematic framework for interpreting and discussing the
 
 **Why Secondary (Not Primary)**:
 
-1. **The Accuracy Paradox for Imbalanced Data**: On Play Store, where 82% of reviews are negative, a naive baseline that always predicts "Negatif" achieves 82% accuracy without learning anything. Both TF-IDF (73.21%) and IndoBERT (73.21%) achieve comparable accuracy, yet their macro F1 scores differ dramatically (0.38 vs 0.33), revealing different capability in minority-class detection that accuracy fails to capture.
+1. **The Accuracy Paradox for Imbalanced Data**: 
+   - **Play Store Example**: Where 82% of reviews are negative, a naive baseline that always predicts "Negatif" achieves 82% accuracy without learning anything. Both TF-IDF (73.21%) and IndoBERT (73.21%) achieve comparable accuracy, yet their macro F1 scores differ dramatically (0.38 vs 0.33), revealing different capability in minority-class detection that accuracy fails to capture.
+   - **App Store Example**: With 66% negative reviews, majority-class baseline achieves 66% accuracy. TF-IDF (66.87%) and IndoBERT (65.66%) show similar accuracy, but TF-IDF's superior macro F1 (0.57 vs 0.47) demonstrates its balanced advantage in detecting all three sentiment classes equally well.
 
-2. **Misleading for Minority Classes**: Play Store TF-IDF's highest accuracy (73.21%) conceals its weak Netral detection (F1 = 0.19, only 22% recall) and poor Positif detection (F1 = 0.11, only 8% recall). A stakeholder relying solely on 73% accuracy would incorrectly conclude the model is production-ready for all sentiment types.
+2. **Misleading for Minority Classes**: 
+   - **Play Store**: TF-IDF's highest accuracy (73.21%) conceals its weak Netral detection (F1 = 0.19, only 22% recall) and poor Positif detection (F1 = 0.11, only 8% recall). The model essentially "gives up" on minority classes to maximize overall accuracy.
+   - **App Store**: Despite comparable accuracy (66.87% vs 65.66%), TF-IDF maintains functional minority-class detection (Netral F1 = 0.30, Positif F1 = 0.62) while IndoBERT collapses (Netral F1 = 0.16, Positif F1 = 0.47). A stakeholder relying solely on accuracy would miss this critical difference in business capability.
 
-3. **Platform Comparison Distortion**: Play Store appears superior by accuracy (73.21% vs App Store's 66.87%), but App Store TF-IDF is actually the better model by macro F1 (0.57 vs 0.38) because it maintains balanced performance across all classes. Accuracy favors platforms with more extreme imbalance, not better models.
+3. **Platform Comparison Distortion**: Play Store appears superior by accuracy (73.21% vs App Store's 66.87%), but **App Store TF-IDF is actually the better model** by macro F1 (0.57 vs 0.38) because it maintains balanced performance across all classes. Accuracy favors platforms with more extreme imbalance, not better models. The 6.34-point accuracy gap misleads; the 0.19-point macro F1 gap correctly identifies App Store's superiority.
 
 **When Accuracy is Still Useful**:
 - **Overall correctness indicator**: Provides a single-number summary for general stakeholder communication
@@ -853,9 +857,10 @@ This section provides a systematic framework for interpreting and discussing the
 - **Baseline comparison**: Comparing model accuracy to majority-class baseline (82% on Play Store) quantifies learning beyond naive prediction
 
 **Result Interpretation**:
-- **TF-IDF App Store (66.87%)**: Lower accuracy reflects balanced errors across all classes rather than majority-class focus
-- **TF-IDF Play Store (73.21%)**: Highest accuracy driven by strong Negatif detection (82.1% of test set); minority-class errors barely impact this metric
-- **IndoBERT comparable accuracy (65.66%-73.21%)**: Similar accuracy to TF-IDF masks worse macro F1 performance, demonstrating accuracy's inadequacy for imbalanced evaluation
+- **TF-IDF App Store (66.87%, Macro F1 = 0.57)**: ✅ **BEST OVERALL MODEL** - Lower accuracy reflects balanced errors across all classes rather than majority-class focus. Maintains functional detection for all sentiments (Negatif 0.79, Netral 0.30, Positif 0.62), making it production-ready for comprehensive sentiment monitoring.
+- **TF-IDF Play Store (73.21%, Macro F1 = 0.38)**: ⚠️ Highest accuracy driven by strong Negatif detection (82.1% of test set), but minority-class errors barely impact this metric. The 6.34-point accuracy advantage over App Store is misleading—macro F1 reveals 0.19-point disadvantage due to minority-class collapse.
+- **IndoBERT App Store (65.66%, Macro F1 = 0.47)**: Comparable accuracy to TF-IDF but 0.10-point macro F1 gap reveals inferior balanced performance (Netral F1 = 0.16 vs 0.30, Positif F1 = 0.47 vs 0.62)
+- **IndoBERT Play Store (73.21%, Macro F1 = 0.33)**: Identical accuracy to TF-IDF Play Store (73.21%) masks 0.05-point macro F1 disadvantage and complete Positif detection failure (F1 = 0.00), demonstrating accuracy's inadequacy for imbalanced evaluation
 
 ### 4.8.2 Recommended Metric Discussion Order
 
@@ -864,51 +869,78 @@ For thesis defense, presentation, and stakeholder communication, the following o
 #### 1. Lead with Macro F1-Score (Primary Metric)
 
 **Opening Statement Example**:
-> "We prioritize Macro F1-Score as our primary evaluation metric because it treats all three sentiment classes (Negatif, Netral, Positif) equally, addressing the severe class imbalance in our dataset—particularly on Play Store where 82% of reviews are negative. This metric aligns with business requirements: Disney+ Hotstar needs to detect all sentiment types, not just complaints. Our results show TF-IDF consistently outperforms IndoBERT by +0.075 macro F1 on average (App: 0.57 vs 0.47; Play: 0.38 vs 0.33), demonstrating superior balanced performance despite similar accuracy."
+> "We prioritize Macro F1-Score as our primary evaluation metric because it treats all three sentiment classes (Negatif, Netral, Positif) equally, addressing class imbalance present in both platforms—App Store with 66% negative reviews and Play Store with more severe 82% imbalance. This metric aligns with business requirements: Disney+ Hotstar needs to detect all sentiment types, not just complaints. Our results show TF-IDF consistently outperforms IndoBERT by +0.075 macro F1 on average (App: 0.57 vs 0.47; Play: 0.38 vs 0.33), with App Store TF-IDF (0.57) emerging as our best overall model, demonstrating superior balanced performance despite lower accuracy compared to Play Store."
 
 **Key Points to Emphasize**:
-- Class imbalance makes accuracy misleading (82% baseline on Play Store)
-- Business needs all three sentiment types detected (Netral = early churn signals)
+- **Both platforms** have class imbalance (App Store 66% negative, Play Store 82% negative) making accuracy misleading
+- **App Store TF-IDF (macro F1 = 0.57)** is our BEST model for balanced sentiment detection across all three classes
+- Business needs all three sentiment types detected (Netral = early churn signals, Positif = successful features)
 - TF-IDF's macro F1 advantage is the foundation of our "simpler beats transformer" contribution
-- Macro F1 reveals balanced performance that accuracy masks
+- Macro F1 reveals balanced performance that accuracy masks, especially the App Store vs Play Store comparison
 
 **Time Allocation**: 30-45 seconds in presentation; majority of evaluation discussion in thesis
 
 #### 2. Report Accuracy (Secondary Context)
 
 **Contextualization Statement**:
-> "Accuracy ranges from 66% to 73% across our four models. While Play Store achieves highest accuracy (73.21%), this metric is misleading due to extreme class imbalance. Play Store's 82% negative class means a naive majority-class baseline achieves 82% accuracy without learning. The discrepancy between Play Store's high accuracy (73.21%) and low macro F1 (0.38) demonstrates the accuracy paradox: the model performs well overall but fails on minority classes critical for business intelligence—specifically Netral detection (F1 = 0.19) and Positif detection (F1 = 0.11)."
+> "Accuracy ranges from 66% to 73% across our four models. While Play Store achieves highest accuracy (73.21%), this is misleading—it simply reflects the platform's extreme 82% negative class imbalance where a naive majority-class baseline achieves 82% accuracy without learning. **App Store TF-IDF, despite having the lowest accuracy (66.87%), is our best-performing model** with macro F1 of 0.57, demonstrating that accuracy and quality are inversely related for imbalanced problems. The accuracy paradox is evident in both platforms:
+> 
+> - **Play Store**: High accuracy (73.21%) but low macro F1 (0.38) due to minority-class collapse (Netral F1 = 0.19, Positif F1 = 0.11)
+> - **App Store**: Lower accuracy (66.87%) but superior macro F1 (0.57) with functional detection across all classes (Netral F1 = 0.30, Positif F1 = 0.62)
+> 
+> The 6.34-point accuracy gap between platforms misleadingly suggests Play Store superiority, but the 0.19-point macro F1 gap in the opposite direction correctly identifies App Store as the better model for balanced sentiment monitoring."
 
 **Key Points to Emphasize**:
 - Report accuracy for completeness and stakeholder familiarity
-- Immediately contextualize with imbalance explanation
-- Contrast Play Store accuracy (73.21%) with macro F1 (0.38) to show divergence
-- Explain why App Store's lower accuracy (66.87%) paired with higher macro F1 (0.57) indicates a **better model**
+- **Immediately emphasize App Store is best despite lowest accuracy** (66.87%)
+- Contrast **both platforms**: Play Store high accuracy (73.21%) with low macro F1 (0.38) vs App Store low accuracy (66.87%) with high macro F1 (0.57)
+- Explain the inverse relationship: lower accuracy + higher macro F1 = better balanced model for business intelligence
 
 **Time Allocation**: 15-20 seconds in presentation; brief paragraph in thesis
 
 #### 3. Break Down Per-Class Performance (Detailed Analysis)
 
 **Per-Class F1 Presentation**:
-> "Examining per-class F1-scores reveals where models succeed and fail:
+> "Examining per-class F1-scores reveals where models succeed and fail across both platforms:
 > 
-> **App Store TF-IDF (Best Overall)**:
-> - Negatif F1: 0.79 ✅ Strong negative detection for complaint tracking
-> - Netral F1: 0.30 ⚠️ Weak but functional; 33% recall captures some early churn signals  
-> - Positif F1: 0.62 ✅ Good positive detection identifies successful features
+> **App Store TF-IDF (0.57 Macro F1) - ✅ BEST OVERALL MODEL**:
+> - **Negatif F1: 0.79** ✅ Strong negative detection with 79% recall—reliably surfaces complaints
+> - **Netral F1: 0.30** ⚠️ Weak but functional; 33% recall captures ~1 in 3 early churn signals (better than Play Store's 22%)
+> - **Positif F1: 0.62** ✅ Good positive detection with 52% recall—identifies successful features for marketing
+> - **Balanced Performance**: All three classes have usable detection capability, enabling comprehensive sentiment monitoring
 > 
-> **Play Store TF-IDF (High Accuracy, Poor Balance)**:
-> - Negatif F1: 0.84 ✅ Excellent for dominant class (82% of data)
-> - Netral F1: 0.19 ⚠️ Barely detects neutral sentiment (only 22% recall)
-> - Positif F1: 0.11 ❌ Fails on positive reviews (only 8% recall)
+> **App Store IndoBERT (0.47 Macro F1) - ⚠️ Minority-Class Collapse**:
+> - **Negatif F1: 0.78** ✅ Similar to TF-IDF (0.79), strong complaint detection
+> - **Netral F1: 0.16** ❌ Severe collapse from TF-IDF's 0.30; only 13% recall misses most churn signals
+> - **Positif F1: 0.47** ⚠️ Significantly worse than TF-IDF's 0.62; only 40% recall
+> - **Implication**: Despite similar accuracy (65.66% vs 66.87%), 0.10-point macro F1 gap reveals TF-IDF's superior balanced performance
 > 
-> This breakdown explains why App Store TF-IDF (macro F1 = 0.57) is superior to Play Store TF-IDF (macro F1 = 0.38) despite lower accuracy. The 0.19-point macro F1 gap reflects Play Store's inability to detect minority classes that represent critical business intelligence."
+> **Play Store TF-IDF (0.38 Macro F1) - ⚠️ High Accuracy, Poor Balance**:
+> - **Negatif F1: 0.84** ✅ Excellent for dominant class (82% of data); highest negative detection
+> - **Netral F1: 0.19** ⚠️ Barely functional; only 22% recall misses most neutral reviews
+> - **Positif F1: 0.11** ❌ Near-failure with 8% recall; positive sentiment nearly invisible
+> - **Paradox**: Highest accuracy (73.21%) but worst macro F1 due to minority-class neglect
+> 
+> **Play Store IndoBERT (0.33 Macro F1) - ❌ Complete Minority Failure**:
+> - **Negatif F1: 0.84** ✅ Matches TF-IDF's negative detection
+> - **Netral F1: 0.16** ⚠️ Worse than TF-IDF's 0.19; only 17% recall
+> - **Positif F1: 0.00** ❌ **COMPLETE FAILURE**: Zero positive reviews detected in test set
+> - **Critical Flaw**: Identical accuracy to TF-IDF (73.21%) completely masks this catastrophic Positif failure
+> 
+> **Cross-Platform Comparison - Why App Store is Superior**:
+> The per-class breakdown reveals that **App Store TF-IDF maintains functional detection across all three sentiment classes**, while Play Store models sacrifice minority classes for accuracy optimization. The 0.19-point macro F1 gap (0.57 vs 0.38) translates to:
+> - **+0.11 Netral F1** (0.30 vs 0.19): App Store detects 50% more early churn signals
+> - **+0.51 Positif F1** (0.62 vs 0.11): App Store detects 6.5× more positive feedback for marketing
+> - Only **-0.05 Negatif F1** (0.79 vs 0.84): Negligible trade-off in complaint detection
+> 
+> This explains why App Store's lower accuracy (66.87%) paired with higher macro F1 (0.57) represents the **best model for comprehensive business intelligence**, while Play Store's higher accuracy (73.21%) with lower macro F1 (0.38) represents an incomplete monitoring system blind to retention and marketing signals."
 
 **Key Points to Emphasize**:
-- Per-class F1 reveals **business-actionable insights** (which sentiment types the model can/cannot detect)
-- Netral F1 = 0.19-0.33 range indicates models struggle with ambiguous sentiment (mixed feedback)
-- Positif F1 collapse on Play Store (0.11 TF-IDF, 0.00 IndoBERT) shows positive sentiment is nearly invisible
-- Negatif F1 = 0.79-0.84 demonstrates all models excel at complaint detection (majority class)
+- **App Store TF-IDF is BEST**: Only model with functional detection across all 3 classes (0.79, 0.30, 0.62)
+- **Both platforms suffer imbalance**: App Store (66% negative) is moderate, Play Store (82% negative) is extreme
+- **Per-class F1 reveals business capabilities**: Netral = churn signals, Positif = marketing insights, Negatif = technical priorities
+- **Cross-platform gap**: App Store detects 50% more neutral and 6.5× more positive reviews than Play Store
+- **Accuracy-F1 paradox visible on BOTH platforms**: Play Store (73.21% accuracy, 0.38 F1) vs App Store (66.87% accuracy, 0.57 F1)
 
 **Time Allocation**: 25-30 seconds in presentation; detailed subsections in thesis (already present in Section 4.6.3-4.6.4)
 
@@ -954,23 +986,32 @@ For thesis defense, presentation, and stakeholder communication, the following o
 
 > "Excellent question. We report accuracy for completeness—it ranges from 66% to 73%. However, **macro F1-score is our primary evaluation metric** for three critical reasons:
 > 
-> **First**, severe class imbalance makes accuracy misleading. Play Store data is 82% negative sentiment. A naive majority-class baseline that always predicts 'Negatif' achieves 82% accuracy without learning any patterns, yet has zero ability to detect neutral or positive reviews. Our models' 73% accuracy appears strong, but macro F1 reveals the true capability.
+> **First**, class imbalance on **both platforms** makes accuracy misleading:
+> - **App Store (66% negative)**: Majority-class baseline achieves 66% accuracy. Yet App Store TF-IDF with 66.87% accuracy and 0.57 macro F1 vastly outperforms this baseline by maintaining balanced detection (Negatif 0.79, Netral 0.30, Positif 0.62).
+> - **Play Store (82% negative)**: Naive baseline achieves 82% accuracy without learning. Both our models achieve 73% accuracy but differ in macro F1 (0.38 vs 0.33), revealing different capabilities that accuracy cannot distinguish.
 > 
-> **Second**, business requirements demand detection of **all three sentiment types**, not just complaints:
-> - **Negatif reviews** (82% of Play Store): Identify critical technical issues—already well-detected with F1 = 0.84
-> - **Netral reviews** (11% of Play Store, F1 = 0.19): Early churn signals indicating users considering alternatives—currently underdetected  
-> - **Positif reviews** (7% of Play Store, F1 = 0.11): Successful features worth amplifying—nearly invisible to the model
+> **Second**, business requirements demand detection of **all three sentiment types across both platforms**:
+> - **Negatif reviews**: Identify critical technical issues—well-detected on both platforms (App 0.79, Play 0.84 F1)
+> - **Netral reviews**: Early churn signals indicating users considering alternatives—App Store detects 50% more (0.30 vs 0.19 F1), providing better retention intelligence
+> - **Positif reviews**: Successful features worth amplifying in marketing—App Store excels (0.62 F1) while Play Store nearly fails (0.11 F1)
 > 
-> A model optimized only for accuracy would over-fit to negative detection, missing these critical minority-class insights that drive product roadmap and retention strategies.
+> A model optimized only for accuracy would favor Play Store (73.21%) over App Store (66.87%), missing the fact that App Store provides 6.5× better positive sentiment detection and 50% better neutral detection—critical for product roadmap and retention strategies.
 > 
-> **Third**, fair model comparison requires balanced metrics. Play Store TF-IDF achieves the highest accuracy (73.21%) but the worst macro F1 (0.38) due to majority-class overfitting. App Store TF-IDF has lower accuracy (66.87%) but superior macro F1 (0.57) with usable detection across all classes (Negatif 0.79, Netral 0.30, Positif 0.62). Accuracy alone would lead us to incorrectly prefer the Play Store model.
+> **Third**, fair model comparison requires balanced metrics. The accuracy-macro F1 paradox is visible on **both platforms**:
+> - **Within Play Store**: TF-IDF and IndoBERT both achieve 73.21% accuracy, yet TF-IDF's 0.38 macro F1 beats IndoBERT's 0.33 due to maintaining minimal Positif detection (0.11 vs 0.00)
+> - **Within App Store**: TF-IDF (66.87% accuracy, 0.57 F1) beats IndoBERT (65.66% accuracy, 0.47 F1) with 0.10-point macro F1 gap despite similar accuracy
+> - **Across platforms**: Play Store's 6.34-point accuracy advantage (73.21% vs 66.87%) completely reverses when measured by macro F1, where App Store leads by 0.19 points (0.57 vs 0.38)
 > 
-> This demonstrates why **balanced metrics matter for imbalanced problems**—a key methodological contribution of this research. The choice of evaluation metric fundamentally shapes which model appears superior, and accuracy-driven optimization would yield a production system blind to minority-class intelligence."
+> **App Store TF-IDF emerges as our best model (0.57 macro F1) despite having the lowest accuracy (66.87%)**, demonstrating that accuracy-driven optimization would have led us to deploy the wrong model—one blind to neutral churn signals and positive marketing insights.
+> 
+> This demonstrates why **balanced metrics matter for imbalanced problems**—a key methodological contribution of this research. The choice of evaluation metric fundamentally shapes which model appears superior, and accuracy-driven optimization would yield a production system optimized for complaint detection while blind to retention and growth intelligence."
 
 **Supporting Evidence from Results**:
-- **The Accuracy Paradox**: Both Play Store models achieve identical 73.21% accuracy, yet their macro F1 differs (0.38 vs 0.33), revealing different minority-class capabilities that accuracy cannot distinguish
-- **Cross-Platform Comparison**: Play Store's higher accuracy (73.21%) vs App Store (66.87%) does not indicate a better model; macro F1 correctly identifies App Store (0.57) as superior due to balanced performance
-- **IndoBERT's Accuracy Trap**: IndoBERT App Store achieves 65.66% accuracy (comparable to TF-IDF's 66.87%) but macro F1 of only 0.47 (vs TF-IDF's 0.57), with Netral F1 collapsing to 0.16 despite overall accuracy appearing adequate
+- **The Accuracy Paradox on BOTH Platforms**: 
+  - **Play Store**: Both models achieve identical 73.21% accuracy, yet macro F1 differs (0.38 vs 0.33), revealing TF-IDF maintains minimal Positif detection while IndoBERT achieves 0.00
+  - **App Store**: Near-identical accuracy (66.87% vs 65.66%) masks 0.10-point macro F1 gap, with TF-IDF's Netral F1 nearly double IndoBERT's (0.30 vs 0.16)
+- **Cross-Platform Comparison Reversal**: Play Store's higher accuracy (73.21% vs 66.87%) does NOT indicate a better model; macro F1 correctly identifies App Store (0.57) as superior by 0.19 points due to balanced performance across all three business-critical sentiment classes
+- **Best Model Selection**: Accuracy would prefer Play Store (73.21%) over App Store (66.87%); macro F1 correctly identifies App Store TF-IDF (0.57) as best overall model with functional detection across Negatif (0.79), Netral (0.30), and Positif (0.62)
 
 **Thesis Connection**: This explanation directly supports our central finding that TF-IDF outperforms IndoBERT. The +0.075 macro F1 advantage is the foundation of challenging "transformer always better" assumptions. If we prioritized accuracy, this contribution would be obscured.
 
