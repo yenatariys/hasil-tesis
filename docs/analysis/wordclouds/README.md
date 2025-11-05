@@ -1,20 +1,91 @@
-# WordCloud Visualizations
-
-**Generated:** November 5, 2025  
-**Source:** `scripts/generate_wordcloud_from_frequencies.py`  
-**Data Column:** `ulasan_bersih` (preprocessed text)
+# WordCloud Analysis & Documentation
 
 ## Overview
 
-These wordclouds are generated directly from the same data used in `WORD_FREQUENCY_ANALYSIS.md`, ensuring **perfect consistency** between frequency tables and visual representations.
+Wordclouds are generated directly from word frequency analysis of preprocessed reviews (`ulasan_bersih` column), ensuring perfect consistency between frequency tables and visual representations.
 
-### Key Characteristics
+**Related Analysis:**
+- [Word Frequency Data](../../../outputs/word_frequencies/word_frequencies.json)
+- [App Store Evaluation](../../../outputs/reports/EVALUATION_RESULTS_APPSTORE.md)
+- [Play Store Evaluation](../../../outputs/reports/EVALUATION_RESULTS_PLAYSTORE.md)
+- [Platform Comparison](../../../outputs/reports/PLATFORM_COMPARISON_ANALYSIS.md)
 
-- ✅ **Data Source:** Same `ulasan_bersih` column as frequency analysis
-- ✅ **Stopwords:** Indonesian-only stopwords (business terms like film/langgan/nonton remain)
-- ✅ **Words Included:** film, langgan, nonton, tonton, bayar, login, etc. (ALL business-relevant terms)
-- ✅ **Word Size:** Proportional to actual frequency counts (relative_scaling=0.5)
-- ✅ **Max Words:** 50 most frequent words per wordcloud
+## Configuration
+
+### Visual Parameters
+- **Dimensions:** 1200×600 pixels
+- **Max Words:** 50 per wordcloud
+- **Background:** White
+- **Color Schemes:**
+  - Negatif: Red colormap
+  - Netral: Blue colormap
+  - Positif: Green colormap
+
+### Text Processing
+- **Source Column:** `ulasan_bersih` (preprocessed text)
+- **Stopwords:** 132 Indonesian common words removed
+- **Business Terms Preserved:** 40 domain-specific keywords
+
+## App Store Wordclouds (838 total reviews)
+
+### 1. Negatif Sentiment (503 reviews, 60.0%)
+- **Most Frequent:** film (128), langgan (90), masuk (75)
+- **Authentication:** kode (70), otp (59), login (35)
+- **Payment:** bayar (57)
+- **Technical:** tv (72), buka (35)
+
+### 2. Netral Sentiment (205 reviews, 24.5%)
+- **Most Frequent:** film (34), tv (25), langgan (25)
+- **Technical:** otp (18), download (12), login (12)
+- **Platform:** apple (12), chromecast (10)
+- **Features:** fitur (10), unduh (11)
+
+### 3. Positif Sentiment (124 reviews, 14.8%)
+- **Most Frequent:** langgan (34), film (21), dukung (15)
+- **Features:** tv (12), tambah (11), sedia (10)
+- **Value:** harga (11), paket (9)
+- **Platform:** apple (9), chromecast (8)
+
+## Play Store Wordclouds (838 total reviews)
+
+### 1. Negatif Sentiment (467 reviews, 55.7%)
+- **Most Frequent:** langgan (117), film (95), nonton (78)
+- **Payment:** bayar (77)
+- **Technical:** download (48), gambar (39), suara (34)
+- **Access:** login (38), buka (35), masuk (34)
+
+### 2. Netral Sentiment (227 reviews, 27.1%)
+- **Most Frequent:** film (38), login (21)
+- **Core Features:** nonton (20), langgan (20)
+- **Platform:** apk (14), telkomsel (8)
+- **Mixed Terms:** suka (11), gk (8)
+
+### 3. Positif Sentiment (105 reviews, 12.5%)
+- **Most Frequent:** langgan (48), film (14)
+- **Satisfaction:** mantap (13), oke (11)
+- **Features:** nonton (12), video (7)
+- **Value:** paket (7), gratis (5)
+
+## Key Differences Between Platforms
+
+### Content & Features
+- App Store: More focus on device integration (apple, chromecast)
+- Play Store: More streaming-related terms (nonton, tonton, video)
+
+### Technical Issues
+- App Store: Authentication-heavy (otp, kode, login)
+- Play Store: Streaming quality focus (gambar, suara)
+
+### Payment & Subscription
+- Both platforms: 'langgan' consistently high-frequency
+- Play Store: More payment provider mentions (telkomsel)
+
+## Generation Process
+1. Word frequency counting from preprocessed text
+2. Stopword removal (except business terms)
+3. Frequency-proportional sizing
+4. Sentiment-specific color schemes
+5. High-resolution PNG output (150 DPI)
 
 ## Wordcloud Generation Criteria
 
