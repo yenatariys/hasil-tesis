@@ -13,8 +13,78 @@ These wordclouds are generated directly from the same data used in `WORD_FREQUEN
 - ✅ **Data Source:** Same `ulasan_bersih` column as frequency analysis
 - ✅ **Stopwords:** Indonesian-only stopwords (business terms like film/langgan/nonton remain)
 - ✅ **Words Included:** film, langgan, nonton, tonton, bayar, login, etc. (ALL business-relevant terms)
-- ✅ **Word Size:** Proportional to actual frequency counts
-- ✅ **Max Words:** 50 per wordcloud
+- ✅ **Word Size:** Proportional to actual frequency counts (relative_scaling=0.5)
+- ✅ **Max Words:** 50 most frequent words per wordcloud
+
+## Wordcloud Generation Criteria
+
+### 1. Data Processing
+- **Source Files:** 
+  - App Store: `data/processed/lex_labeled_review_app.csv` (838 reviews)
+  - Play Store: `data/processed/lex_labeled_review_play.csv` (838 reviews)
+- **Text Column:** `ulasan_bersih` (preprocessed review text)
+- **NaN Handling:** Dropped before processing
+
+### 2. Text Filtering
+
+**Indonesian Stopwords (REMOVED):**
+```python
+INDONESIAN_STOPWORDS = {
+    'ada', 'adalah', 'agar', 'akan', 'aku', 'anda', 'apa', 'atau', 'bagai',
+    'bagaimana', 'bagi', 'bahkan', 'bahwa', 'banyak', 'begitu', 'biasa', 'bila',
+    # Common Indonesian connectors, pronouns, fillers
+}
+```
+
+**Business Terms (PRESERVED):**
+```python
+BUSINESS_TERMS_ALLOWLIST = {
+    'film', 'langgan', 'langganan', 'nonton', 'tonton', 'bayar', 'download', 'unduh',
+    'tv', 'kode', 'otp', 'login', 'masuk', 'buka', 'konten', 'subtitle', 'gambar',
+    'layar', 'suara', 'buffer', 'loading', 'lemot', 'gratis', 'harga', 'dukungan',
+    'dukung', 'paket', 'telkomsel', 'mantap', 'oke', 'kualitas', 'server', 'lag',
+    'stream', 'hotstar', 'chromecast', 'error', 'salah', 'akun', 'rekening'
+}
+```
+
+### 3. Visual Parameters
+```python
+WordCloud(
+    width=1200,           # Image width
+    height=600,           # Image height
+    background_color='white',
+    colormap={
+        'Negatif': 'Reds',    # Red color scheme for negative
+        'Netral': 'Blues',    # Blue for neutral
+        'Positif': 'Greens'   # Green for positive
+    },
+    max_words=50,         # Show top 50 most frequent words
+    relative_scaling=0.5, # Word size proportional to frequency
+    min_font_size=10     # Minimum readable text size
+)
+```
+
+### 4. Sentiment Groups
+
+**App Store (838 total):**
+- Negatif: 503 reviews (60.0%)
+- Netral: 205 reviews (24.5%)
+- Positif: 124 reviews (14.8%)
+
+**Play Store (838 total):**
+- Negatif: 467 reviews (55.7%)
+- Netral: 227 reviews (27.1%)
+- Positif: 105 reviews (12.5%)
+
+### 5. Processing Steps
+1. Load CSV files
+2. Filter by sentiment (Negatif/Netral/Positif)
+3. Remove NaN values from `ulasan_bersih` column
+4. Join all review text for each sentiment
+5. Remove Indonesian stopwords (EXCEPT business terms)
+6. Generate wordcloud with size proportional to word frequency
+7. Apply sentiment-specific color scheme
+8. Save as high-resolution PNG (1200×600, 150 DPI)
 
 ## Generated Files
 
