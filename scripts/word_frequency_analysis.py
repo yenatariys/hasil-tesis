@@ -27,7 +27,7 @@ from collections import Counter
 import sys
 from pathlib import Path
 
-def analyze_sentiment_keywords(df, platform_name, text_column='stemmed_text'):
+def analyze_sentiment_keywords(df, platform_name, text_column='ulasan_bersih'):
     """
     Analyze word frequencies for each sentiment class.
     
@@ -38,7 +38,7 @@ def analyze_sentiment_keywords(df, platform_name, text_column='stemmed_text'):
     platform_name : str
         'App Store' or 'Play Store' for display
     text_column : str
-        Column name containing preprocessed/stemmed text
+        Column name containing preprocessed/stemmed text (default: 'ulasan_bersih')
     
     Returns:
     --------
@@ -84,7 +84,7 @@ def analyze_sentiment_keywords(df, platform_name, text_column='stemmed_text'):
     return results
 
 
-def analyze_specific_keywords(df, platform_name, text_column='stemmed_text'):
+def analyze_specific_keywords(df, platform_name, text_column='ulasan_bersih'):
     """
     Search for specific technical keywords across negative reviews.
     
@@ -95,7 +95,7 @@ def analyze_specific_keywords(df, platform_name, text_column='stemmed_text'):
     platform_name : str
         'App Store' or 'Play Store'
     text_column : str
-        Column name containing preprocessed text
+        Column name containing preprocessed text (default: 'ulasan_bersih')
     """
     # Get negative reviews only
     negative_reviews = df[df['sentimen_multiclass'] == 'Negatif'][text_column].dropna()
@@ -142,12 +142,12 @@ def main():
         df_app = pd.read_csv('data/processed/lex_labeled_review_app.csv')
         df_play = pd.read_csv('data/processed/lex_labeled_review_play.csv')
         
-        print(f"\n✅ Data loaded successfully!")
+        print(f"\n[OK] Data loaded successfully!")
         print(f"   App Store: {len(df_app)} total reviews")
         print(f"   Play Store: {len(df_play)} total reviews")
         
     except FileNotFoundError as e:
-        print(f"\n❌ Error: Could not find data files.")
+        print(f"\n[ERROR] Could not find data files.")
         print(f"   Expected files:")
         print(f"   - data/processed/lex_labeled_review_app.csv")
         print(f"   - data/processed/lex_labeled_review_play.csv")
@@ -156,28 +156,28 @@ def main():
     
     # Analyze App Store
     print("\n\n")
-    app_results = analyze_sentiment_keywords(df_app, "App Store", text_column='stemmed_text')
-    app_keywords = analyze_specific_keywords(df_app, "App Store", text_column='stemmed_text')
+    app_results = analyze_sentiment_keywords(df_app, "App Store", text_column='ulasan_bersih')
+    app_keywords = analyze_specific_keywords(df_app, "App Store", text_column='ulasan_bersih')
     
     # Analyze Play Store
     print("\n\n")
-    play_results = analyze_sentiment_keywords(df_play, "Play Store", text_column='stemmed_content')
-    play_keywords = analyze_specific_keywords(df_play, "Play Store", text_column='stemmed_content')
+    play_results = analyze_sentiment_keywords(df_play, "Play Store", text_column='ulasan_bersih')
+    play_keywords = analyze_specific_keywords(df_play, "Play Store", text_column='ulasan_bersih')
     
     # Summary
     print("\n\n" + "=" * 80)
     print("ANALYSIS COMPLETE")
     print("=" * 80)
-    print("\n✅ Word frequency analysis completed for:")
+    print("\n[OK] Word frequency analysis completed for:")
     print("   - App Store: Negatif, Netral, Positif")
     print("   - Play Store: Negatif, Netral, Positif")
-    print("\n📊 Results saved in:")
+    print("\n[RESULTS] Results saved in:")
     print("   - docs/analysis/WORD_FREQUENCY_ANALYSIS.md (documentation)")
-    print("\n📝 Methodology:")
-    print("   - 5-stage preprocessing pipeline (translation → stemming)")
+    print("\n[METHOD] Methodology:")
+    print("   - 5-stage preprocessing pipeline (translation -> stemming)")
     print("   - Counter-based frequency calculation")
     print("   - Sentiment-specific keyword extraction")
-    print("\n💡 Next Steps:")
+    print("\n[NEXT] Next Steps:")
     print("   - Visualize with word clouds (see notebooks)")
     print("   - Extract TF-IDF feature importance from trained models")
     print("   - Perform n-gram analysis for phrase detection")
