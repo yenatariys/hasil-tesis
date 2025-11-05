@@ -150,6 +150,7 @@
 
 🔹 STAGE 1: PREPROCESSING (5 Steps)
    Step 1: Translation → Indonesian (googletrans)
+   Step 2: Cleaning → lowercase, url, number, double spaces
    Step 2: Tokenization → Word tokens (NLTK)
    Step 3: Stopword Removal → Filter 758 Indonesian stopwords
            ⚠️ Creates empty strings (App: 8, Play: 43)
