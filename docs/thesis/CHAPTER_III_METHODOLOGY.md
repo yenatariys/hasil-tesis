@@ -44,15 +44,17 @@ Disney+ Hotstar, launched in Indonesia in September 2020, faces increasing compe
 
 ### 3.2.3 Success Criteria
 
-**Quantitative Criteria**:
-- Model accuracy ≥ 60% (baseline threshold for multiclass classification)
-- Macro F1-score ≥ 0.50 (to ensure balanced performance across all sentiment classes)
-- Processing time < 5 seconds per review (for real-time deployment)
+**Success Criteria Categories**:
 
-**Qualitative Criteria**:
-- Model interpretability for business decision-making
-- Consistency between platforms (App Store vs. Play Store)
-- Practical deployment feasibility via dashboard interface
+**1. Model Performance Metrics**:
+- Classification accuracy 
+- Macro F1-score for balanced class evaluation
+- Processing time efficiency
+
+**2. Business Value Metrics**:
+- Model interpretability
+- Cross-platform consistency
+- Deployment feasibility
 
 ### 3.2.4 Data Mining Goals
 

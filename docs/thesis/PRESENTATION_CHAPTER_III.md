@@ -66,7 +66,8 @@
 │ 1️⃣ BUSINESS UNDERSTANDING                          │
 │    • Research Objectives: Automated sentiment        │
 │      classification for Indonesian reviews          │
-│    • Success Criteria: Macro F1 ≥ 0.50              │
+│    • Success Criteria: Model performance &          │
+│      business value metrics                         │
 │    • Primary Question: TF-IDF vs IndoBERT?          │
 └─────────────────────────────────────────────────────┘
                         ↓
