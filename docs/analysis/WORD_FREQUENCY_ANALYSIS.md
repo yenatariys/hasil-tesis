@@ -2,8 +2,15 @@
 ## Evidence-Based Keyword Extraction from Scraped Reviews
 
 **Analysis Date**: November 5, 2025  
-**Data Source**: Scraped Disney+ Hotstar reviews (April 2025)  
+**Data Source**: Scraped Disney+ Hotstar reviews (April 7th, 2025)  
 **Method**: Word frequency count from stemmed text (after preprocessing pipeline)
+
+**Related Documents:**
+- [Platform Comparison Analysis](../../outputs/reports/PLATFORM_COMPARISON_ANALYSIS.md)
+- [App Store Evaluation](../../outputs/reports/EVALUATION_RESULTS_APPSTORE.md)
+- [Play Store Evaluation](../../outputs/reports/EVALUATION_RESULTS_PLAYSTORE.md)
+- [Wordcloud Visualizations](wordclouds/README.md)
+- [Raw Frequency Data](../../outputs/word_frequencies/word_frequencies.json)
 
 ---
 
