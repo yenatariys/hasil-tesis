@@ -21,10 +21,10 @@
 🔍 Data Understanding (Phase 2):
 Evidence: Official Ratings (Mar 2025) vs Scraped Reviews (Apr 2025)
    App Store:  4.8 → 2.21 (53.6% gave 1-star) | Δ -2.59 ⚠️
-   Play Store: 4.5 → 2.27 (53.8% gave 1-star) | Δ -2.23 ⚠️
+   Play Store: 2.0 → 2.27 (53.8% gave 1-star) | Δ +0.27 ✅
    
 → Insight: Recent sentiment HIGHLY NEGATIVE (scraped = recent complaints)
-→ Cross-platform gap: MINIMAL in scraped data (0.06 vs 0.3 official)
+→ Cross-platform gap: MASSIVE in official ratings (4.8 vs 2.0 = 2.8★ gap)
 
 ⚙️ Modeling Results (Phase 4-5):
 TF-IDF vs IndoBERT Performance (Macro F1):
@@ -35,8 +35,9 @@ TF-IDF vs IndoBERT Performance (Macro F1):
 ```
 
 **Speaking Points** (1 min):
-- Official ratings aggregate ALL history (positive legacy), scraped data = recent pain points
-- 838 reviews captured peak negativity period (53%+ one-star dominance both platforms)
+- Official ratings show STARK CONTRAST: App Store 4.8 (positive legacy) vs Play Store 2.0 (already negative)
+- Scraped data (April 2025) shows both platforms converging to ~2.2 (53%+ one-star dominance)
+- Play Store slightly IMPROVED from 2.0→2.27, but App Store CRASHED from 4.8→2.21
 - TF-IDF consistently outperforms despite IndoBERT's complexity
 - Evidence-based: all numbers from actual scraped data + model evaluation
 
@@ -218,8 +219,8 @@ RQ1: TF-IDF vs IndoBERT?
    → Evidence: App 0.57 vs 0.47 | Play 0.38 vs 0.33
 
 RQ2: Cross-platform differences?
-   → App Store: 4.8→2.21 | Play Store: 4.5→2.27 (scraped Apr 2025)
-   → Evidence: Official ratings hide recent negativity (53%+ 1-star)
+   → App Store: 4.8→2.21 (Δ-2.59) | Play Store: 2.0→2.27 (Δ+0.27)
+   → Evidence: App Store CRASHED, Play Store slightly improved but stays low
 
 RQ3: Price increase impact?
    → +3.6% Android negative shift | +1.7% iOS shift
@@ -229,7 +230,7 @@ RQ3: Price increase impact?
 **Speaking Points** (1.5 min):
 - NOT "TF-IDF always better"—context-dependent (small data + explicit sentiment)
 - All findings evidence-based: actual scraped data (April 2025), model evaluations
-- Cross-platform gap: official ratings (4.8 vs 4.5) ≠ recent sentiment (2.21 vs 2.27)
+- Cross-platform gap: official ratings (4.8 vs 2.0) converge in scraped data (2.21 vs 2.27)
 - Price increase: modest but measurable impact, platform-dependent
 
 ---
@@ -245,8 +246,8 @@ RQ3: Price increase impact?
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 1. Cross-Platform Asymmetry Discovery
-   → First documentation: 4.8→2.21 (App) vs 4.5→2.27 (Play)
-   → Recent data reveals peak negativity (53%+ 1-star both)
+   → First documentation: 4.8→2.21 (App, Δ-2.59) vs 2.0→2.27 (Play, Δ+0.27)
+   → Recent data reveals peak negativity (53%+ 1-star both platforms)
 
 2. TF-IDF vs IndoBERT Controlled Comparison  
    → +0.075 F1 advantage, 10× speed, interpretable features
@@ -312,7 +313,7 @@ FULL SESSION STRUCTURE (10-15 min total):
    ✅ Consolidated from 12 → 5 slides (50% reduction)
    ✅ Updated rating comparison: Official (Mar 2025) vs Scraped (Apr 2025)
       • App Store: 4.8 → 2.21 (Δ -2.59) 
-      • Play Store: 4.5 → 2.27 (Δ -2.23)
+      • Play Store: 2.0 → 2.27 (Δ +0.27)
    ✅ Evidence-based: ALL numbers from actual scraped data
    ✅ Result-focused: emphasizes outcomes over methodology details
    ✅ Fits within 10-15 min total session time
@@ -356,9 +357,9 @@ Slide 5 (Contributions):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 1. START WITH EVIDENCE (Slide 1):
-   "Official ratings show 4.8 and 4.5, but our scraped data from 
-   April 2025 reveals 2.21 and 2.27 - a stark contrast showing 
-   recent user sentiment is highly negative."
+   "Official ratings show 4.8 (App Store) and 2.0 (Play Store), 
+   but our scraped data from April 2025 reveals both converged to 
+   ~2.2 - showing recent user sentiment is highly negative across platforms."
 
 2. LEAD WITH COUNTERINTUITIVE FINDING:
    "Simpler TF-IDF outperforms IndoBERT by +0.075 macro F1 and 
@@ -382,9 +383,10 @@ Slide 5 (Contributions):
 ⚠️ ANTICIPATED QUESTIONS:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Q1: "Why such huge gap between official (4.8) and scraped (2.21)?"
-   A: "Official = aggregate all history (positive legacy), scraped = 
-      recent 838 reviews capturing peak negativity period (53% 1-star)."
+Q1: "Why such huge gap between official App Store (4.8) and scraped (2.21)?"
+   A: "Official App Store = aggregate all history (positive legacy), 
+      scraped = recent 838 reviews capturing peak negativity period 
+      (53% 1-star). Play Store was already low at 2.0 officially."
 
 Q2: "Why not use more data?"
    A: "Methodological constraint: balanced temporal sampling (419 before, 
@@ -909,7 +911,7 @@ content additions. Thank you. I'm ready for questions."
 **1. Rating Data (Slide 1 - Official vs Scraped Comparison)**:
    - **Official Ratings**: Mentioned in Chapter I (Introduction) - March 2025
      - App Store: 4.8 stars
-     - Play Store: 4.5 stars
+     - Play Store: 2.0 stars
    - **Scraped Data**: April 2025 collection
      - File: `data/processed/lex_labeled_review_app.csv` (838 reviews)
      - File: `data/processed/lex_labeled_review_play.csv` (838 reviews)
