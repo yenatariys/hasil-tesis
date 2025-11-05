@@ -1,10 +1,15 @@
 # EVALUATION RESULTS - APP STORE
 ## Disney+ Hotstar App Reviews Sentiment Analysis
 
-**Generated:** 2025-11-03  
+**Generated:** 2025-11-05  
 **Platform:** App Store  
 **Total Samples:** 838 (Train: 670, Test: 168)  
 **Stratified Split:** True
+
+**Related Documents:**
+- [Platform Comparison Analysis](PLATFORM_COMPARISON_ANALYSIS.md)
+- [Word Frequency Analysis](../docs/analysis/WORD_FREQUENCY_ANALYSIS.md)
+- [Wordcloud Documentation](../docs/analysis/wordclouds/README.md)
 
 ---
 
@@ -124,18 +129,44 @@ Initial sentiment distribution from lexicon-based labeling (entire dataset)
 
 ### 5.1 Negatif Sentiment WordCloud
 
-- **Total Reviews:** 556
-- **Top Keywords:** aplikasi, lag, error, jelek, kecewa, buruk, lemot, crash, tidak, gagal, loading, bug, lambat, payah, buffering
+- **Total Reviews:** 503
+- **Top Keywords:** film (128), langgan (90), masuk (75), tv (72), kode (70), otp (59), bayar (57), baik (44), login (35), buka (35), coba (33), nomor (33), kali (32), aja (32), salah (31)
+
+**Key Insights:**
+- Authentication issues dominate negative reviews (masuk, kode, otp, login)
+- Payment-related concerns significant (langgan, bayar)
+- Device compatibility problems (tv, buka)
+- High frequency of access-related terms suggests login/authentication as major pain point
 
 ### 5.2 Netral Sentiment WordCloud
 
-- **Total Reviews:** 147
-- **Top Keywords:** aplikasi, disney, hotstar, nonton, film, drama, konten, streaming, coba, paket, biasa, ok, lumayan, standar, bisa
+- **Total Reviews:** 205
+- **Top Keywords:** film (34), tv (25), langgan (25), otp (18), download (12), apple (12), login (12), dukung (11), kasih (11), terima (11), baik (11), suka (11), unduh (11), chromecast (10), fitur (10)
+
+**Key Insights:**
+- More balanced mix of features and issues
+- Platform-specific mentions (apple, chromecast) indicate device integration focus
+- Service-related terms more neutral (dukung, kasih, terima)
+- Feature discussion more prominent (fitur, download, unduh)
 
 ### 5.3 Positif Sentiment WordCloud
 
-- **Total Reviews:** 135
-- **Top Keywords:** bagus, mantap, keren, suka, rekomendasi, terbaik, lancar, puas, lengkap, sempurna, aplikasi, film, drama, konten, disney
+- **Total Reviews:** 124
+- **Top Keywords:** langgan (34), film (21), dukung (15), tv (12), harga (11), tambah (11), sedia (10), paket (9), apple (9), ya (8), chromecast (8), kualitas (8), kasih (7), bayar (7), guna (7)
+
+**Key Insights:**
+- Content value proposition stands out (film, kualitas)
+- Subscription features viewed positively (langgan, paket, harga)
+- Device compatibility praised (tv, apple, chromecast)
+- Service quality appreciation (dukung, sedia, tambah)
+
+### Overall Word Frequency Analysis
+
+**Cross-Sentiment Patterns:**
+1. **Content Focus:** 'film' appears in top keywords across all sentiments, indicating it's central to user experience
+2. **Authentication Impact:** OTP/login issues more prevalent in negative reviews
+3. **Device Integration:** TV/Chromecast compatibility discussed across sentiments
+4. **Subscription Terms:** 'langgan' (subscribe) appears frequently in all categories, suggesting it's a key aspect of user experience
 
 ---
 

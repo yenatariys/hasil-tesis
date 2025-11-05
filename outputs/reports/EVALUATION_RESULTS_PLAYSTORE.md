@@ -1,10 +1,15 @@
 # EVALUATION RESULTS - PLAY STORE
 ## Disney+ Hotstar App Reviews Sentiment Analysis
 
-**Generated:** 2025-11-03  
+**Generated:** 2025-11-05  
 **Platform:** Play Store  
 **Total Samples:** 838 (Train: 670, Test: 168)  
 **Stratified Split:** True
+
+**Related Documents:**
+- [Platform Comparison Analysis](PLATFORM_COMPARISON_ANALYSIS.md)
+- [Word Frequency Analysis](../docs/analysis/WORD_FREQUENCY_ANALYSIS.md)
+- [Wordcloud Documentation](../docs/analysis/wordclouds/README.md)
 
 ---
 
@@ -124,18 +129,45 @@ Initial sentiment distribution from lexicon-based labeling (entire dataset)
 
 ### 5.1 Negatif Sentiment WordCloud
 
-- **Total Reviews:** 689
-- **Top Keywords:** aplikasi, tidak, error, jelek, buruk, ga, lemot, lag, crash, kecewa, loading, bug, payah, eror, sering
+- **Total Reviews:** 467
+- **Top Keywords:** langgan (117), film (95), nonton (78), bayar (77), download (48), tonton (45), baik (40), hp (39), gambar (39), login (38), tv (37), buka (35), masuk (34), suara (34), kode (30)
+
+**Key Insights:**
+- Subscription and payment issues prominent (langgan, bayar)
+- Streaming functionality problems (nonton, tonton, gambar, suara)
+- Device/platform concerns (hp, tv, download)
+- Technical issues affect core functionality (login, buka, masuk)
 
 ### 5.2 Netral Sentiment WordCloud
 
-- **Total Reviews:** 90
-- **Top Keywords:** aplikasi, disney, hotstar, nonton, film, konten, drama, bagus, coba, subscribe, biasa, ok, kurang, ada, tapi
+- **Total Reviews:** 227
+- **Top Keywords:** film (38), login (21), nonton (20), langgan (20), apk (14), suka (11), bayar (11), baik (9), putar (9), paket (9), video (8), gk (8), telkomsel (8), pakai (8), pake (7)
+
+**Key Insights:**
+- More balanced view of app functionality
+- Platform-specific mentions (apk, telkomsel)
+- Mix of positive and negative terms (suka, baik vs gk)
+- Focus on core features (film, nonton, putar)
 
 ### 5.3 Positif Sentiment WordCloud
 
-- **Total Reviews:** 59
-- **Top Keywords:** bagus, mantap, keren, lancar, aplikasi, suka, puas, rekomendasi, terbaik, film, disney, lengkap, konten, sempurna, top
+- **Total Reviews:** 105
+- **Top Keywords:** langgan (48), film (14), mantap (13), nonton (12), oke (11), paket (7), update (7), video (7), putar (7), jaring (7), loading (6), gratis (5), baik (5), kadang (5), uang (5)
+
+**Key Insights:**
+- Strong subscription satisfaction (langgan appears most)
+- Positive performance feedback (mantap, oke)
+- Content appreciation (film, video)
+- Value perception (paket, gratis, uang)
+
+### Overall Word Frequency Analysis
+
+**Cross-Platform Patterns:**
+1. **Subscription Focus:** 'langgan' is highly frequent across all sentiments, particularly in positive reviews
+2. **Content Centrality:** 'film' and streaming terms (nonton, putar) consistently important
+3. **Technical Terms:** Different focus from App Store - more about streaming quality than authentication
+4. **Platform Specifics:** Mobile-centric issues (hp, apk) unique to Play Store
+5. **Provider Integration:** Telkomsel mentions indicate carrier billing/integration importance
 
 ---
 
