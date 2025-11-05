@@ -81,24 +81,29 @@
                         ↓
 ┌─────────────────────────────────────────────────────┐
 │ 3️⃣ DATA PREPARATION                                │
-│    • 5-Stage Pipeline:                              │
+│    • 6-Stage Pipeline:                              │
 │      1. Translation (Google Translate)              │
-│      2. Tokenization (NLTK)                         │
-│      3. Stopword Removal (758 Indonesian stopwords) │
-│      4. Stemming (Sastrawi)                         │
-│      5. Final Text (ulasan_bersih)                  │
+│      2. Cleaning (lowercase + noise removal)        │
+│      3. Tokenization (NLTK)                         │
+│      4. Stopword Removal (758 Indonesian stopwords) │
+│      5. Stemming (Sastrawi)                         │
+│      6. Final Text (`ulasan_bersih`)                │
 │    • Labeling: InSet lexicon (10,218 terms)         │
 └─────────────────────────────────────────────────────┘
                         ↓
 ┌─────────────────────────────────────────────────────┐
 │ 4️⃣ MODELING                                        │
 │    • Feature Extraction:                            │
-│      - TF-IDF: Max 5,000 features, (1,2) n-grams    │
+│      - TF-IDF: Max 5,000 features                   │
+│        • N-grams tested: (1,1), (1,2), (1,3)        │
 │      - IndoBERT: 768-dimensional embeddings         │
 │    • Classifier: SVM (Linear kernel)                │
 │    • Tuning: GridSearchCV (10-fold CV)              │
-│      - TF-IDF: C=100, kernel='linear'               │
-│      - IndoBERT: C=0.01, kernel='linear'            │
+│      - TF-IDF: n-gram (1,1)-(1,3), C ∈ {0.001,      │
+│        0.01, 0.1, 1, 10, 100}, kernel ∈ {linear,    │
+│        rbf, poly}                                   │
+│      - IndoBERT: C ∈ {0.001, 0.01, 0.1, 1, 10,      │
+│        100}, kernel ∈ {linear, rbf, poly}           │
 └─────────────────────────────────────────────────────┘
                         ↓
 ┌─────────────────────────────────────────────────────┐
@@ -125,7 +130,7 @@
 ```
 
 **Speaking Points** (90 sec):
-> "CRISP-DM ensures systematic progression through six iterative phases. We start by understanding business needs—sentiment analysis for Disney+ Hotstar with macro F1 ≥ 0.50 as our success criterion. Data understanding involves collecting 1,676 reviews across two platforms and time periods split by the 2023 price increase. Data preparation transforms raw Indonesian text through a 5-stage preprocessing pipeline using Sastrawi stemmer and InSet lexicon labeling. Modeling compares TF-IDF versus IndoBERT features with SVM classifiers tuned via grid search—linear kernels emerged optimal for both. Evaluation uses macro F1-score as the primary metric to handle severe class imbalance—82% negative on Play Store. Finally, deployment makes models accessible through an interactive Streamlit dashboard for real-time predictions."
+> "CRISP-DM ensures systematic progression through six iterative phases. We start by understanding business needs—sentiment analysis for Disney+ Hotstar with macro F1 ≥ 0.50 as our success criterion. Data understanding involves collecting 1,676 reviews across two platforms and time periods split by the 2023 price increase. Data preparation transforms raw Indonesian text through a 6-stage preprocessing pipeline (translation, cleaning, tokenization, stopword removal, stemming, final text). Modeling compares TF-IDF versus IndoBERT features with SVM classifiers tuned via grid search—we test three n-gram settings for TF-IDF and multiple C and kernel parameters for both methods. Evaluation uses macro F1-score as the primary metric to handle severe class imbalance—82% negative on Play Store. Finally, deployment makes models accessible through an interactive Streamlit dashboard for real-time predictions."
 
 ---
 
@@ -149,15 +154,15 @@
      - Period 2 (2023-2025): Post-price increase - 419 each
    • Attributes: userName, score (1-5★), content, timestamp
 
-🔹 STAGE 1: PREPROCESSING (5 Steps)
+🔹 STAGE 1: PREPROCESSING (6 Steps)
    Step 1: Translation → Indonesian (googletrans)
-   Step 2: Cleaning → lowercase, url, number, double spaces
-   Step 2: Tokenization → Word tokens (NLTK)
-   Step 3: Stopword Removal → Filter 758 Indonesian stopwords
-           ⚠️ Creates empty strings (App: 8, Play: 43)
-   Step 4: Stemming → Root form (Sastrawi)
-           Example: "menyenangkan" → "senang"
-   Step 5: Final Text → ulasan_bersih column
+   Step 2: Cleaning → lowercase, strip url/punctuation/numbers, collapse spaces
+   Step 3: Tokenization → Word tokens (NLTK)
+   Step 4: Stopword Removal → Filter 758 Indonesian stopwords
+      ⚠️ Creates empty strings (App: 8, Play: 43)
+   Step 5: Stemming → Root form (Sastrawi)
+      Example: "menyenangkan" → "senang"
+   Step 6: Final Text → stored as `ulasan_bersih`
 
 🔹 STAGE 2: SENTIMENT LABELING (Lexicon-Based)
    • Method: InSet dictionary (10,218 terms)
@@ -183,7 +188,7 @@
    │ Method 1: TF-IDF (Traditional)                  │
    ├─────────────────────────────────────────────────┤
    │ • Max features: 5,000                           │
-   │ • N-grams: (1,2) unigrams + bigrams             │
+   │ • N-gram tested: (1,1), (1,2), (1,3)            │
    │ • Output: Sparse matrix                         │
    │   - App Store: (830, 1688)                      │
    │   - Play Store: (795, 1368)                     │
@@ -212,9 +217,9 @@
    • Model: Support Vector Machine
    • Hyperparameter Tuning: GridSearchCV (10-fold CV)
    • Search Space:
-     - C: [0.001, 0.01, 0.1, 1, 10, 100]
-     - kernel: [linear, rbf, poly]
-   • Best Parameters Found:
+     - TF-IDF: n-gram {(1,1),(1,2),(1,3)} × C ∈ {0.001, 0.01, 0.1, 1, 10, 100}, kernel ∈ {linear, rbf, poly}
+     - IndoBERT: C ∈ {0.001, 0.01, 0.1, 1, 10, 100}, kernel ∈ {linear, rbf, poly}
+   • Best Parameters Found (reported in Chapter IV):
      ┌──────────────────┬──────┬──────────┐
      │ Model            │ C    │ Kernel   │
      ├──────────────────┼──────┼──────────┤
@@ -237,7 +242,7 @@
 ```
 
 **Speaking Points** (90 sec):
-> "Raw reviews enter a 5-stage preprocessing pipeline. Translation ensures all text is Indonesian, tokenization splits into words, stopword removal filters 758 function words—critical note: this creates empty strings that MUST be filtered before modeling. Sastrawi stemming reduces morphological variants to root forms. InSet lexicon provides ground truth labels showing severe imbalance—82% negative on Play Store. We then extract features using two methods: TF-IDF creates sparse word-frequency vectors with 1,368-1,688 features, IndoBERT produces dense 768-dimensional contextual embeddings. Both feed into SVM classifiers optimized via grid search. The key finding: linear kernels consistently emerged optimal, suggesting sentiment classes are linearly separable. After stratified 80:20 split with class balancing, we evaluate on held-out test sets using macro F1 as primary metric."
+> "Raw reviews enter a 6-stage preprocessing pipeline. Translation ensures all text is Indonesian, cleaning normalizes case and strips noise, tokenization splits into words, stopword removal filters 758 function words—critical note: this creates empty strings that MUST be filtered before modeling. Sastrawi stemming reduces morphological variants to root forms, producing the `ulasan_bersih` column. InSet lexicon provides ground truth labels showing severe imbalance—82% negative on Play Store. We then extract features using two methods: TF-IDF creates sparse word-frequency vectors, testing three n-gram configurations, while IndoBERT produces dense 768-dimensional contextual embeddings. Both feed into SVM classifiers optimized via grid search across multiple hyperparameter combinations. After stratified 80:20 split with class balancing, we evaluate on held-out test sets using macro F1 as primary metric."
 
 ---
 
@@ -486,7 +491,7 @@
 
 ### **Q2: "What makes your comparison controlled?"**
 **Answer** (30 seconds):
-> "Single classifier—SVM. Same data—1,676 Indonesian reviews. Same preprocessing—5-stage pipeline with Sastrawi stemming. Only the feature extraction differs: TF-IDF represents the bag-of-words tradition with 5,000 sparse features, IndoBERT represents contextual transformers with 768 dense embeddings. This isolates feature engineering impact, answering whether expensive modern methods justify their cost. Our finding: TF-IDF wins with +0.075 average macro F1 advantage, 10× faster inference, and superior interpretability for business stakeholders."
+> "Single classifier—SVM. Same data—1,676 Indonesian reviews. Same preprocessing—6-stage pipeline (translation, cleaning, tokenization, stopword removal, stemming, final text). Only the feature extraction differs: TF-IDF represents the bag-of-words tradition with 5,000 sparse features, IndoBERT represents contextual transformers with 768 dense embeddings. This isolates feature engineering impact, answering whether expensive modern methods justify their cost. Our finding: TF-IDF wins with +0.075 average macro F1 advantage, 10× faster inference, and superior interpretability for business stakeholders."
 
 ---
 
@@ -514,7 +519,7 @@
 - Annotate each phase with your specific example:
   - Business Understanding: "Macro F1 ≥ 0.50"
   - Data Understanding: "1,676 reviews, 2020-2025"
-  - Data Preparation: "5-stage pipeline"
+   - Data Preparation: "6-stage pipeline"
   - Modeling: "TF-IDF vs IndoBERT + SVM"
   - Evaluation: "Macro F1 primary metric"
   - Deployment: "Streamlit dashboard"
@@ -548,7 +553,7 @@
 **Content Covered:**
 - ✅ 3.1 Thesis Overall Flow (Slide 1: FENOMENA → MANFAAT)
 - ✅ 3.2 CRISP-DM Framework (Slide 2: 6 phases detailed)
-- ✅ Data Pipeline Details (Slide 3: 5-stage preprocessing + feature extraction)
+- ✅ Data Pipeline Details (Slide 3: 6-stage preprocessing + feature extraction)
 - ✅ Methodological Justifications (Slide 4: 5 critical decisions)
 - ✅ Deployment & Impact (Slide 5: 3-layer value delivery)
 
