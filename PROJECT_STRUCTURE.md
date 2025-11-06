@@ -26,13 +26,10 @@ Jupyter notebooks for analysis and experimentation.
 ### 📁 `/scripts`
 Python scripts organized by purpose.
 
-- **`/data_preparation`** - Data cleaning and preparation
+- **`/analysis`** - Data analysis and statistics
+  - `analyze_empty_strings.py` - Empty string analysis
   - `calculate_dataset_statistics.py` - Dataset statistics calculator
-  
-- **`/modeling`** - Model training and optimization
-  - (Model training scripts)
-  
-- **`/analysis`** - Statistical and exploratory analysis
+  - `check_token_reduction.py` - Token reduction verification
   - `language_distribution_analysis.py` - Language analysis
   - `rawtext_distribution.py` - Text distribution analysis
   - `year_variation.py` - Temporal variation analysis
@@ -40,6 +37,11 @@ Python scripts organized by purpose.
 - **`/evaluation`** - Model evaluation and results extraction
   - `extract_modeling_results.py` - Extract modeling phase results
   - `extract_evaluation_data_both.py` - Extract evaluation data for both platforms
+  - `verify_evaluation_results.py` - Verify evaluation results
+  
+- **Root scripts** - Utility scripts
+  - `generate_wordcloud_from_frequencies.py` - Generate wordcloud visualizations
+  - `word_frequency_analysis.py` - Word frequency analysis
 
 ### 📁 `/outputs`
 All generated outputs from experiments and analyses.
@@ -50,39 +52,50 @@ All generated outputs from experiments and analyses.
   - `svm_pipeline_bert_app.pkl` - App Store IndoBERT + SVM model
   - `svm_pipeline_bert_play.pkl` - Play Store IndoBERT + SVM model
   
-- **`/results`** - Experiment results (JSON, CSV)
-  - `modeling_results_summary.json` - Modeling phase summary
-  - `evaluation_results_appstore.json` - App Store evaluation
-  - `evaluation_results_playstore.json` - Play Store evaluation
-  - `evaluation_results_combined.json` - Combined evaluation
-  - Language distribution CSVs
+- **`/results`** - Experiment results organized by type
+  - **`/evaluation`** - Evaluation results (JSON)
+    - `evaluation_results_appstore.json` - App Store evaluation
+    - `evaluation_results_playstore.json` - Play Store evaluation
+    - `evaluation_results_combined.json` - Combined evaluation
+  - **`/language_analysis`** - Language analysis results
+    - `app_store_language_distribution.csv` - App Store language data
+    - `play_store_language_distribution.csv` - Play Store language data
+    - `language_distribution_summary.csv` - Summary statistics
+    - `word_frequency_analysis.txt` - Word frequency by sentiment
+  - **`/model_exports`** - Exported model results (JSON)
+    - `exported_model_results_app.json` - App Store model results
+    - `exported_model_results_play.json` - Play Store model results
+    - `modeling_results_summary.json` - Modeling phase summary
+  - `token_reduction_verification.txt` - Token reduction statistics
   
-- **`/reports`** - Generated markdown reports
-  - `MODELING_RESULTS.md` - Modeling phase report
-  - `EVALUATION_RESULTS_APPSTORE.md` - App Store evaluation report
-  - `EVALUATION_RESULTS_PLAYSTORE.md` - Play Store evaluation report
-  - `EVALUATION_RESULTS_COMBINED.md` - Cross-platform comparison
+- **`/reports`** - Comprehensive evaluation reports
+  - `EVALUATION_RESULTS_APPSTORE.md` - Complete App Store evaluation (7 sections)
+  - `EVALUATION_RESULTS_PLAYSTORE.md` - Complete Play Store evaluation (7 sections)
+  - `PLATFORM_COMPARISON_ANALYSIS.md` - Cross-platform comparative analysis
+  - `README.md` - Reports overview
   
-- **`/visualizations`** - Plots, charts, and visual outputs
-  - (Generated visualizations)
+
 
 ### 📁 `/docs`
 Comprehensive project documentation.
 
-- **`/thesis`** - Thesis chapters and academic documentation
-  - `THESIS_MODELING_PHASE.md` - Modeling phase chapter
-  - (Other thesis chapters)
-  
-- **`/technical`** - Technical documentation following CRISP-DM
-  - `data_preparation_phase.md` - Data preparation documentation
-  - `modeling_phase.md` - Modeling methodology
-  - (Other technical docs)
+- **`/analysis`** - Analysis documentation and visualizations
+  - **`/wordclouds`** - Word cloud visualizations by platform
+    - **`/app_store`** - App Store wordclouds (negatif, netral, positif)
+    - **`/play_store`** - Play Store wordclouds (negatif, netral, positif)
+  - `WORD_FREQUENCY_RESULTS.md` - Word frequency analysis documentation
   
 - **`/guides`** - User guides and tutorials
   - `DOCUMENTATION_GUIDE.md` - Documentation guide
-  - `DOCUMENTATION_SUMMARY.md` - Documentation summary
   - `LANGUAGE_DISTRIBUTION_RESULTS.md` - Language analysis results
-  - Original `README.md` backup
+  - `README.md` - Guides overview
+  
+- **`/technical`** - Technical documentation
+  - `data_preparation_phase.md` - Data preparation documentation
+  - `README.md` - Technical docs overview
+  
+- **`/thesis`** - Thesis documentation
+  - `README.md` - Thesis chapters overview
 
 ### 📁 `/dashboard`
 Interactive Streamlit dashboard application.
@@ -165,8 +178,10 @@ Dashboard Display
 - **View results:** `/outputs/reports/`
 - **Read documentation:** `/docs/`
 - **Launch dashboard:** `/dashboard/dashboard.py`
+- **Analysis scripts:** `/scripts/analysis/`
+- **Evaluation scripts:** `/scripts/evaluation/`
 
 ---
 
 **Maintained by:** Yenatari S  
-**Last Updated:** November 3, 2025
+**Last Updated:** November 6, 2025
