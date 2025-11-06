@@ -26,22 +26,20 @@ Jupyter notebooks for analysis and experimentation.
 ### 📁 `/scripts`
 Python scripts organized by purpose.
 
-- **`/analysis`** - Data analysis and statistics
+- **`/analysis`** - Data analysis, statistics, and visualizations
   - `analyze_empty_strings.py` - Empty string analysis
   - `calculate_dataset_statistics.py` - Dataset statistics calculator
   - `check_token_reduction.py` - Token reduction verification
+  - `generate_wordcloud_from_frequencies.py` - Generate wordcloud visualizations
   - `language_distribution_analysis.py` - Language analysis
   - `rawtext_distribution.py` - Text distribution analysis
+  - `word_frequency_analysis.py` - Word frequency analysis by sentiment
   - `year_variation.py` - Temporal variation analysis
   
 - **`/evaluation`** - Model evaluation and results extraction
   - `extract_modeling_results.py` - Extract modeling phase results
   - `extract_evaluation_data_both.py` - Extract evaluation data for both platforms
   - `verify_evaluation_results.py` - Verify evaluation results
-  
-- **Root scripts** - Utility scripts
-  - `generate_wordcloud_from_frequencies.py` - Generate wordcloud visualizations
-  - `word_frequency_analysis.py` - Word frequency analysis
 
 ### 📁 `/outputs`
 All generated outputs from experiments and analyses.
