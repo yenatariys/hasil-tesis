@@ -201,8 +201,6 @@
 - Play Store sentiment shift shows **marginal statistical evidence** of price increase impact
 - Combined with qualitative review analysis, suggests **modest but measurable** price sensitivity, especially among Android users
 
-**Data Source Reference**: [Chapter IV Section 4.3.4: Temporal Sentiment Distribution](../../docs/thesis/CHAPTER_IV_RESULTS_DISCUSSION.md)
-
 ---
 
 ## Conclusion
