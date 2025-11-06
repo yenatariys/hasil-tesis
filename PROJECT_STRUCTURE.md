@@ -98,17 +98,9 @@ Comprehensive project documentation.
 ### 📁 `/dashboard`
 Interactive Streamlit dashboard application.
 
-- **`/pages`** - Dashboard page components
-  - Multi-page dashboard structure
-  
-- **`/utils`** - Utility functions for dashboard
-  - Helper functions and data loaders
-  
-- **`/assets`** - Dashboard assets
-  - CSS stylesheets
-  - Images and icons
-  
-- `dashboard.py` - Main dashboard application
+- **`/utils`** - Utility functions for data loading and helpers
+- **`/assets`** - Static assets (CSS, images, icons)
+- `dashboard.py` - Main Streamlit application (single-page)
 - `run_dashboard.ps1` - PowerShell launcher script
 
 ### 📁 `/notebooks` (Root notebooks)

@@ -1,3 +1,0 @@
-# Pages
-
-Dashboard page components
