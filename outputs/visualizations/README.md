@@ -1,3 +1,0 @@
-# Visualizations
-
-Plots and charts
