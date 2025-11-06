@@ -78,8 +78,7 @@ hasil-tesis/
 │
 ├── 📄 README.md                           # Project overview ⭐
 ├── 📄 PROJECT_STRUCTURE.md                # This file
-├── 📄 requirements.txt                    # Python dependencies
-└── 📄 reorganize_project.py               # Reorganization script
+└── 📄 requirements.txt                    # Python dependencies
 
 ```
 
