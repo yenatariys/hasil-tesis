@@ -1,0 +1,47 @@
+Loading datasets...
+Ulasan App Store: 838
+Ulasan Play Store: 838
+
+================================================================================
+
+1. ANALISIS FORMAT TANGGAL
+--------------------------------------------------------------------------------
+Contoh kolom 'date' di App Store:
+0    2022-07-02
+1    2022-12-25
+2    2020-11-21
+
+Contoh kolom 'at' di Play Store:
+0    2022-12-31 20:28:17
+1    2022-12-31 18:09:19
+2    2022-12-31 15:23:16
+
+
+2. CAKUPAN TEMPORAL
+--------------------------------------------------------------------------------
+App Store:
+  Ulasan Pertama: September 04, 2020 (Sep 04, 2020)
+  Ulasan Terakhir:   April 06, 2025 (Apr 06, 2025)
+ Tahun dengan Ulasan: [2020, 2022, 2023, 2025]
+  Rentang Cakupan: 55 bulan (4 tahun, 7 bulan)
+
+Play Store:
+  Ulasan Pertama: November 20, 2022 (Nov 20, 2022)
+  Ulasan Terakhir:   April 07, 2025 (Apr 07, 2025)
+  Tahun dengan Ulasan: [2022, 2025]
+  Rentang Cakupan: 29 bulan (2 tahun, 5 bulan)
+
+
+3. ANALISIS RATING
+--------------------------------------------------------------------------------
+App Store:
+  Rata-rata rating: 2.21 bintang
+  Proporsi bintang 1: 53.6%
+  Proporsi bintang 5: 16.5%
+
+Play Store:
+  Rata-rata rating: 2.27 bintang
+  Proporsi bintang 1: 53.8%
+  Proporsi bintang 5: 20.2%
+
+
