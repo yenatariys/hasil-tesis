@@ -1,0 +1,188 @@
+================================================================================
+EMPTY STRING ANALYSIS - PREPROCESSING PIPELINE INVESTIGATION
+================================================================================
+[OK] Loaded App Store data: 838 reviews
+[OK] Loaded Play Store data: 838 reviews
+
+SUMMARY FOR APP STORE
+================================================================================
+Total reviews: 838
+Empty after preprocessing: 4
+Percentage: 0.48%
+================================================================================
+--------------------------------------------------------------------------------
+Empty review #1 (index 81)
+Original length: 2 characters
+Original text: ….
+Cleaned text: 
+Tokens before stopwords (0): []
+Tokens after stopwords (0): []
+Became empty at: stopword_removal
+Reason: All tokens were removed as stopwords
+--------------------------------------------------------------------------------
+Empty review #2 (index 127)
+Original length: 27 characters
+Original text: Bagus..., bagus banget👍👍👍👍👍
+Cleaned text: bagus bagus banget
+Tokens before stopwords (3): ['bagus', 'bagus', 'banget']
+Tokens after stopwords (0): []
+Became empty at: stopword_removal
+Reason: All tokens were removed as stopwords
+--------------------------------------------------------------------------------
+Empty review #3 (index 455)
+Original length: 4 characters
+Original text: 👍🏻👍🏻
+Cleaned text: 
+Tokens before stopwords (0): []
+Tokens after stopwords (0): []
+Became empty at: stopword_removal
+Reason: All tokens were removed as stopwords
+--------------------------------------------------------------------------------
+Empty review #4 (index 690)
+Original length: 5 characters
+Original text: Bagus
+Cleaned text: bagus
+Tokens before stopwords (1): ['bagus']
+Tokens after stopwords (0): []
+Became empty at: stopword_removal
+Reason: All tokens were removed as stopwords
+--------------------------------------------------------------------------------
+
+SUMMARY FOR PLAY STORE
+================================================================================
+Total reviews: 838
+Empty after preprocessing: 14
+Percentage: 1.67%
+================================================================================
+--------------------------------------------------------------------------------
+Empty review #1 (index 23)
+Original length: 8 characters
+Original text: Bagus...
+Cleaned text: bagus
+Tokens before stopwords (1): ['bagus']
+Tokens after stopwords (0): []
+Became empty at: stopword_removal
+Reason: All tokens were removed as stopwords
+--------------------------------------------------------------------------------
+Empty review #2 (index 37)
+Original length: 5 characters
+Original text: Bagus
+Cleaned text: bagus
+Tokens before stopwords (1): ['bagus']
+Tokens after stopwords (0): []
+Became empty at: stopword_removal
+Reason: All tokens were removed as stopwords
+--------------------------------------------------------------------------------
+Empty review #3 (index 82)
+Original length: 5 characters
+Original text: Bagus
+Cleaned text: bagus
+Tokens before stopwords (1): ['bagus']
+Tokens after stopwords (0): []
+Became empty at: stopword_removal
+Reason: All tokens were removed as stopwords
+--------------------------------------------------------------------------------
+Empty review #4 (index 327)
+Original length: 18 characters
+Original text: Aplikasi nya bagus
+Cleaned text: aplikasi nya bagus
+Tokens before stopwords (3): ['aplikasi', 'nya', 'bagus']
+Tokens after stopwords (0): []
+Became empty at: stopword_removal
+Reason: All tokens were removed as stopwords
+--------------------------------------------------------------------------------
+Empty review #5 (index 333)
+Original length: 10 characters
+Original text: 👍🏻👍🏻👍🏻👍🏻👍🏻
+Cleaned text: 
+Tokens before stopwords (0): []
+Tokens after stopwords (0): []
+Became empty at: stopword_removal
+Reason: All tokens were removed as stopwords
+--------------------------------------------------------------------------------
+Empty review #6 (index 472)
+Original length: 10 characters
+Original text: 👍🏻👍🏻👍🏻👍🏻😁😊
+Cleaned text: 
+Tokens before stopwords (0): []
+Tokens after stopwords (0): []
+Became empty at: stopword_removal
+Reason: All tokens were removed as stopwords
+--------------------------------------------------------------------------------
+Empty review #7 (index 485)
+Original length: 5 characters
+Original text: 👍👍👍👍👍
+Cleaned text: 
+Tokens before stopwords (0): []
+Tokens after stopwords (0): []
+Became empty at: stopword_removal
+Reason: All tokens were removed as stopwords
+--------------------------------------------------------------------------------
+Empty review #8 (index 502)
+Original length: 5 characters
+Original text: Bagus
+Cleaned text: bagus
+Tokens before stopwords (1): ['bagus']
+Tokens after stopwords (0): []
+Became empty at: stopword_removal
+Reason: All tokens were removed as stopwords
+--------------------------------------------------------------------------------
+Empty review #9 (index 585)
+Original length: 5 characters
+Original text: Bagus
+Cleaned text: bagus
+Tokens before stopwords (1): ['bagus']
+Tokens after stopwords (0): []
+Became empty at: stopword_removal
+Reason: All tokens were removed as stopwords
+--------------------------------------------------------------------------------
+Empty review #10 (index 587)
+Original length: 5 characters
+Original text: bagus
+Cleaned text: bagus
+Tokens before stopwords (1): ['bagus']
+Tokens after stopwords (0): []
+Became empty at: stopword_removal
+Reason: All tokens were removed as stopwords
+--------------------------------------------------------------------------------
+Empty review #11 (index 593)
+Original length: 5 characters
+Original text: bagus
+Cleaned text: bagus
+Tokens before stopwords (1): ['bagus']
+Tokens after stopwords (0): []
+Became empty at: stopword_removal
+Reason: All tokens were removed as stopwords
+--------------------------------------------------------------------------------
+Empty review #12 (index 669)
+Original length: 2 characters
+Original text: 👍🏻
+Cleaned text: 
+Tokens before stopwords (0): []
+Tokens after stopwords (0): []
+Became empty at: stopword_removal
+Reason: All tokens were removed as stopwords
+--------------------------------------------------------------------------------
+Empty review #13 (index 671)
+Original length: 4 characters
+Original text: 😟😟😟😟
+Cleaned text: 
+Tokens before stopwords (0): []
+Tokens after stopwords (0): []
+Became empty at: stopword_removal
+Reason: All tokens were removed as stopwords
+--------------------------------------------------------------------------------
+Empty review #14 (index 814)
+Original length: 12 characters
+Original text: Sangat bagus
+Cleaned text: sangat bagus
+Tokens before stopwords (2): ['sangat', 'bagus']
+Tokens after stopwords (0): []
+Became empty at: stopword_removal
+Reason: All tokens were removed as stopwords
+--------------------------------------------------------------------------------
+================================================================================
+CONCLUSION
+================================================================================
+Some reviews contain only stopwords after cleaning, leaving no tokens to model.
+Filter these rows before training to avoid empty strings in the processed data.
