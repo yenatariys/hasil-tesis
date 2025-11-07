@@ -1,0 +1,25 @@
+============================================================
+ANALISIS TOKEN APP STORE:
+============================================================
+Total token awal: 14,671
+Total setelah stopword removal: 7,496
+Reduksi Token: 48.9%
+Rata-rata token awal per ulasan: 17.5
+Rata-rata setelah stopword removal: 8.9
+Nama kolom untuk label sentimen: 'sentimen_multiclass'
+
+============================================================
+ANALISIS TOKEN PLAY STORE:
+============================================================
+Total token awal: 11,484
+Total setelah stopword removal: 5,975
+Reduksi Token: 48.0%
+Rata-rata token awal per ulasan: 13.7
+Rata-rata setelah stopword removal: 7.1
+Nama kolom untuk label sentimen: 'sentimen_multiclass'
+
+============================================================
+VERIFIKASI NAMA KOLOM LABEL:
+============================================================
+Kolom CSV App Store: date, text, rating, translated_text, cleaned_text, tokenized_text, initial_token_count, stopword_removed_text, token_count, stemmed_text, ulasan_bersih, skor_lexicon, skor_lexicon_ke_rating, sentimen_multiclass
+Kolom CSV Play Store: content, score, at, translated_content, cleaned_content, tokenized_content, initial_token_count, stopword_removed_content, token_count, stemmed_content, ulasan_bersih, skor_lexicon, skor_lexicon_ke_score, sentimen_multiclass
