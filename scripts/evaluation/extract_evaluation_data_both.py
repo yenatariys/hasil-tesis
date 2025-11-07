@@ -65,7 +65,7 @@ def extract_appstore_data():
     }
     
     # Load ground truth test set distribution from CSV
-    dist_path = 'outputs/appstore_sentiment_distribution.csv'
+    dist_path = 'outputs/results/sentiment_split/appstore_sentiment_distribution.csv'
     dist_df = pd.read_csv(dist_path)
     test_rows = dist_df[dist_df['set'] == 'Test']
     ground_truth = {row['sentiment']: {"count": int(row['count']), "percentage": float(row['percentage'])} for _, row in test_rows.iterrows()}
@@ -73,9 +73,9 @@ def extract_appstore_data():
         "test_set_size": len(test_rows),
         "ground_truth": ground_truth,
         "tfidf_svm": {
-            "Negatif": {"count": 116, "percentage": 69.05},
-            "Netral": {"count": 31, "percentage": 18.45},
-            "Positif": {"count": 21, "percentage": 12.50}
+            "Negatif": {"count": 87, "percentage": 52},
+            "Netral": {"count": 31, "percentage": 26},
+            "Positif": {"count": 21, "percentage": 22}
         },
         "indobert_svm": {
             "Negatif": {"count": 129, "percentage": 76.79},
