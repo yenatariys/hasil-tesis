@@ -1,0 +1,10 @@
+set,sentiment,count,percentage
+Full,Negatif,466,58.62
+Full,Netral,227,28.55
+Full,Positif,102,12.83
+Train,Negatif,373,58.65
+Train,Netral,181,28.46
+Train,Positif,82,12.89
+Test,Negatif,93,58.49
+Test,Netral,46,28.93
+Test,Positif,20,12.58
