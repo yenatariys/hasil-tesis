@@ -84,7 +84,7 @@ _SIMULATED_STOPWORDS: Optional[set[str]] = None
 _SIMULATED_STEMMER: Any = None
 
 st.set_page_config(
-    page_title="Sentiment & Pre-processing Dashboard",
+    page_title="Disney+ Hotstar Sentiment Analysis Dashboard",
     page_icon="📊",
     layout="wide",
 )
@@ -108,9 +108,11 @@ button[kind="secondary"] {
 """
 
 # Prefer data/ and outputs/ layout but fall back to repo root for backwards compatibility
-REPO_ROOT = Path(__file__).resolve().parents[2]  # repository root (two levels above pages/)
+REPO_ROOT = Path(__file__).resolve().parent.parent  # repository root (one level above dashboard/)
 DATA_DIR = REPO_ROOT / "data"
+
 OUTPUTS_DIR = REPO_ROOT / "outputs"
+OUTPUTS_MODELS_DIR = OUTPUTS_DIR / "models"
 _DATA_CANDIDATE_FOLDERS: tuple[Path, ...] = (
     DATA_DIR,
     DATA_DIR / "processed",
@@ -144,13 +146,14 @@ def _discover_exported_jsons() -> List[Path]:
     return sorted(candidates)
 
 
+
 def _discover_saved_pipelines() -> List[Path]:
     if joblib is None:
         return []
 
     seen: Dict[Path, None] = {}
     candidates: List[Path] = []
-    for directory in (OUTPUTS_DIR, REPO_ROOT):
+    for directory in (OUTPUTS_DIR, OUTPUTS_MODELS_DIR, REPO_ROOT):
         if not directory.exists():
             continue
         for extension in ("*.joblib", "*.pkl"):
