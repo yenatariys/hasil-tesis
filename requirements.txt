@@ -6,3 +6,8 @@ wordcloud
 scikit-learn
 torch
 transformers
+numpy
+joblib
+googletrans
+nltk
+sastrawi
