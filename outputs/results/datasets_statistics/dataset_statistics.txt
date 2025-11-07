@@ -1,6 +1,6 @@
 Loading datasets...
-Ulasan App Store: 838
-Ulasan Play Store: 838
+Ulasan App Store: 830
+Ulasan Play Store: 795
 
 ================================================================================
 
@@ -35,13 +35,13 @@ Play Store:
 3. ANALISIS RATING
 --------------------------------------------------------------------------------
 App Store:
-  Rata-rata rating: 2.21 bintang
-  Proporsi bintang 1: 53.6%
-  Proporsi bintang 5: 16.5%
+  Rata-rata rating: 2.20 bintang
+  Proporsi bintang 1: 53.7%
+  Proporsi bintang 5: 16.0%
 
 Play Store:
-  Rata-rata rating: 2.27 bintang
-  Proporsi bintang 1: 53.8%
-  Proporsi bintang 5: 20.2%
+  Rata-rata rating: 2.19 bintang
+  Proporsi bintang 1: 55.6%
+  Proporsi bintang 5: 18.1%
 
 

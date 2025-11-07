@@ -1,6 +1,6 @@
 Play Store Review Length Distribution (%):
 length_category
-Short (6-15 words)        35.3
-Very short (1-5 words)    31.9
-Medium (16-50 words)      29.8
-Long (51-100 words)        3.0
+Short (6-15 words)        37.0
+Medium (16-50 words)      31.4
+Very short (1-5 words)    28.4
+Long (51-100 words)        3.1
