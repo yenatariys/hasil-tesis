@@ -1,0 +1,7 @@
+App Store Review Length Distribution (%):
+length_category
+Short (6-15 words)        37.9
+Medium (16-50 words)      37.6
+Very short (1-5 words)    18.7
+Long (51-100 words)        5.0
+Very long (>100 words)     0.7
