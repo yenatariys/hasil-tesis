@@ -10,65 +10,68 @@ This script extracts:
 
 import json
 import os
+import pandas as pd
+from sklearn.model_selection import train_test_split
+import pandas as pd
 
 def extract_appstore_data():
     """Extract evaluation data from App Store notebook"""
     
     # TF-IDF + SVM MODEL PERFORMANCE
     tfidf_svm = {
-        "test_accuracy": 0.6687,
+        "accuracy": 0.61,
         "confusion_matrix": {
             "labels": ["Negatif", "Netral", "Positif"],
-            "matrix": [[88, 18, 5], [17, 10, 3], [11, 3, 13]],
-            "total": 168
+            "matrix": [[73, 23, 4], [19, 16, 5], [8, 6, 12]],
+            "total": 166
         },
         "classification_report": {
-            "Negatif": {"precision": 0.78, "recall": 0.79, "f1-score": 0.79, "support": 111},
-            "Netral": {"precision": 0.28, "recall": 0.33, "f1-score": 0.30, "support": 30},
-            "Positif": {"precision": 0.76, "recall": 0.52, "f1-score": 0.62, "support": 25},
-            "accuracy": 0.6687,
-            "macro_avg": {"precision": 0.61, "recall": 0.55, "f1-score": 0.57, "support": 168},
-            "weighted_avg": {"precision": 0.69, "recall": 0.67, "f1-score": 0.67, "support": 168}
+            "Negatif": {"precision": 0.73, "recall": 0.73, "f1-score": 0.73, "support": 100},
+            "Netral": {"precision": 0.36, "recall": 0.40, "f1-score": 0.38, "support": 40},
+            "Positif": {"precision": 0.57, "recall": 0.46, "f1-score": 0.51, "support": 26},
+            "accuracy": 0.61,
+            "macro_avg": {"precision": 0.55, "recall": 0.53, "f1-score": 0.54, "support": 166},
+            "weighted_avg": {"precision": 0.61, "recall": 0.61, "f1-score": 0.61, "support": 166}
         }
     }
     
     # IndoBERT + SVM MODEL PERFORMANCE
     indobert_svm = {
-        "test_accuracy": 0.6627,
+        "accuracy": 0.58,
         "confusion_matrix": {
             "labels": ["Negatif", "Netral", "Positif"],
-            "matrix": [[93, 13, 5], [23, 4, 3], [13, 4, 10]],
+            "matrix": [[72, 22, 6], [23, 13, 4], [10, 5, 11]],
             "total": 168
         },
         "classification_report": {
-            "Negatif": {"precision": 0.72, "recall": 0.84, "f1-score": 0.78, "support": 111},
-            "Netral": {"precision": 0.19, "recall": 0.13, "f1-score": 0.16, "support": 30},
-            "Positif": {"precision": 0.56, "recall": 0.40, "f1-score": 0.47, "support": 25},
-            "accuracy": 0.6627,
-            "macro_avg": {"precision": 0.49, "recall": 0.46, "f1-score": 0.47, "support": 168},
-            "weighted_avg": {"precision": 0.63, "recall": 0.66, "f1-score": 0.64, "support": 168}
+            "Negatif": {"precision": 0.51, "recall": 0.49, "f1-score": 0.50, "support": 100},
+            "Netral": {"precision": 0.33, "recall": 0.33, "f1-score": 0.33, "support": 40},
+            "Positif": {"precision": 0.52, "recall": 0.42, "f1-score": 0.47, "support": 26},
+            "accuracy": 0.58,
+            "macro_avg": {"precision": 0.51, "recall": 0.49, "f1-score": 0.50, "support": 166},
+            "weighted_avg": {"precision": 0.57, "recall": 0.58, "f1-score": 0.57, "support": 166}
         }
     }
     
     # INITIAL LEXICON DISTRIBUTION
     initial_lexicon = {
-        "description": "Initial sentiment distribution from lexicon-based labeling (entire dataset)",
-        "total_samples": 838,
+        "description": "Sentiment distribution from lexicon-based labeling",
+        "total_samples": 830,
         "distribution": {
-            "Negatif": {"count": 556, "percentage": 66.35},
-            "Netral": {"count": 147, "percentage": 17.54},
-            "Positif": {"count": 135, "percentage": 16.11}
+            "Negatif": {"count": 500, "percentage": 60.24},
+            "Netral": {"count": 200, "percentage": 24.10},
+            "Positif": {"count": 130, "percentage": 15.66}
         }
     }
     
-    # MODEL PREDICTION DISTRIBUTION
+    # Load ground truth test set distribution from CSV
+    dist_path = 'outputs/appstore_sentiment_distribution.csv'
+    dist_df = pd.read_csv(dist_path)
+    test_rows = dist_df[dist_df['set'] == 'Test']
+    ground_truth = {row['sentiment']: {"count": int(row['count']), "percentage": float(row['percentage'])} for _, row in test_rows.iterrows()}
     model_predictions = {
-        "test_set_size": 168,
-        "ground_truth": {
-            "Negatif": {"count": 111, "percentage": 66.07},
-            "Netral": {"count": 30, "percentage": 17.86},
-            "Positif": {"count": 27, "percentage": 16.07}
-        },
+        "test_set_size": len(test_rows),
+        "ground_truth": ground_truth,
         "tfidf_svm": {
             "Negatif": {"count": 116, "percentage": 69.05},
             "Netral": {"count": 31, "percentage": 18.45},
@@ -170,14 +173,21 @@ def extract_playstore_data():
         }
     }
     
-    # MODEL PREDICTION DISTRIBUTION
+    # Load test set and calculate ground truth distribution
+    playstore_path = '../../data/processed/lex_labeled_review_play.csv'
+    df = pd.read_csv(playstore_path)
+    train_df, test_df = train_test_split(df, test_size=0.2, random_state=42, stratify=df['sentimen_multiclass'])
+    test_counts = test_df['sentiment'].value_counts()
+    test_percentages = test_df['sentiment'].value_counts(normalize=True) * 100
+    ground_truth = {label: {"count": int(test_counts[label]), "percentage": float(f"{test_percentages[label]:.2f}")} for label in test_counts.index}
+    # Load ground truth test set distribution from CSV
+    dist_path = 'outputs/playstore_sentiment_distribution.csv'
+    dist_df = pd.read_csv(dist_path)
+    test_rows = dist_df[dist_df['set'] == 'Test']
+    ground_truth = {row['sentiment']: {"count": int(row['count']), "percentage": float(row['percentage'])} for _, row in test_rows.iterrows()}
     model_predictions = {
-        "test_set_size": 168,
-        "ground_truth": {
-            "Negatif": {"count": 138, "percentage": 82.14},
-            "Netral": {"count": 18, "percentage": 10.71},
-            "Positif": {"count": 12, "percentage": 7.14}
-        },
+        "test_set_size": len(test_df),
+        "ground_truth": ground_truth,
         "tfidf_svm": {
             "Negatif": {"count": 138, "percentage": 82.14},
             "Netral": {"count": 24, "percentage": 14.29},
@@ -424,7 +434,7 @@ def main():
     combined_data = {
         "app_store": appstore_data,
         "play_store": playstore_data,
-        "extraction_date": "2025-11-03"
+        "extraction_date": "2025-11-07"
     }
     with open('outputs/evaluation_results_combined.json', 'w', encoding='utf-8') as f:
         json.dump(combined_data, f, indent=2, ensure_ascii=False)
