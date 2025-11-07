@@ -47,38 +47,38 @@ def analyze_sentiment_keywords(df, platform_name, text_column='ulasan_bersih'):
     results = {}
     
     print("=" * 80)
-    print(f"{platform_name.upper()} - WORD FREQUENCY BY SENTIMENT")
+    print(f"{platform_name.upper()} - FREKUENSI KATA BERDASARKAN SENTIMEN")
     print("=" * 80)
     
     for sentiment in ['Negatif', 'Netral', 'Positif']:
-        # Filter reviews by sentiment
+        # Filter ulasan berdasarkan sentimen
         reviews = df[df['sentimen_multiclass'] == sentiment][text_column].dropna()
         
         print(f"\n{'=' * 80}")
-        print(f"{sentiment.upper()} SENTIMENT ({len(reviews)} reviews, {len(reviews)/len(df)*100:.1f}%)")
+        print(f"{sentiment.upper()} SENTIMENT ({len(reviews)} ulasan, {len(reviews)/len(df)*100:.1f}%)")
         print(f"{'=' * 80}")
         
-        # Collect all words from reviews
+        # Mengumpulkan semua kata dari ulasan
         all_words = []
         for review in reviews:
             if isinstance(review, str):
                 words = review.split()
                 all_words.extend(words)
         
-        # Count word frequencies
+        # Menghitung frekuensi kata
         word_freq = Counter(all_words)
         top_20 = word_freq.most_common(20)
         
-        # Store results
+        # Menyimpan hasil
         results[sentiment] = dict(word_freq)
-        
-        # Display top 20 words
-        print(f"\nTop 20 Most Frequent Words:")
-        print(f"{'Rank':<6}{'Word':<25}{'Frequency':>12}")
+
+        # Menampilkan top 20 kata
+        print(f"\nTop 20 Kata Paling Sering Muncul:")
+        print(f"{'Rank':<6}{'Kata':<25}{'Frekuensi':>12}")
         print("-" * 45)
         
         for i, (word, freq) in enumerate(top_20, 1):
-            if word.strip():  # Skip empty strings
+            if word.strip():  # Skip string kosong
                 print(f"{i:<6}{word:<25}{freq:>12}")
     
     return results
@@ -97,14 +97,14 @@ def analyze_specific_keywords(df, platform_name, text_column='ulasan_bersih'):
     text_column : str
         Column name containing preprocessed text (default: 'ulasan_bersih')
     """
-    # Get negative reviews only
+    # Mengambil ulasan negatif saja
     negative_reviews = df[df['sentimen_multiclass'] == 'Negatif'][text_column].dropna()
     
     print(f"\n{'=' * 80}")
-    print(f"{platform_name} - TECHNICAL KEYWORD SEARCH (Negative Reviews)")
+    print(f"{platform_name} - PENCARIAN KATA KUNCI TEKNIS (Ulasan Negatif)")
     print(f"{'=' * 80}")
-    print(f"Total negative reviews: {len(negative_reviews)}")
-    
+    print(f"Total ulasan negatif: {len(negative_reviews)}")
+
     # Technical keywords to search
     keywords = [
         'error', 'gagal', 'lemot', 'load', 'loading',
@@ -112,8 +112,8 @@ def analyze_specific_keywords(df, platform_name, text_column='ulasan_bersih'):
         'konten', 'film', 'masuk', 'bug', 'login',
         'kode', 'otp', 'salah', 'buka'
     ]
-    
-    print(f"\n{'Keyword':<20}{'Count':>10}{'Percentage':>12}")
+
+    print(f"\n{'Keyword':<20}{'Jumlah':>10}{'Persentase':>12}")
     print("-" * 45)
     
     keyword_stats = {}
@@ -121,9 +121,9 @@ def analyze_specific_keywords(df, platform_name, text_column='ulasan_bersih'):
         count = sum(1 for review in negative_reviews 
                    if isinstance(review, str) and keyword in review.lower())
         pct = (count / len(negative_reviews)) * 100
-        keyword_stats[keyword] = {'count': count, 'percentage': pct}
+        keyword_stats[keyword] = {'Jumlah': count, 'Persentase': pct}
         
-        if count > 0:  # Only show keywords that appear
+        if count > 0:  # Hanya tunjukkan keyword yang muncul
             print(f"{keyword:<20}{count:>10}{pct:>11.1f}%")
     
     return keyword_stats
@@ -133,8 +133,8 @@ def main():
     """Main execution function."""
     
     print("\n" + "=" * 80)
-    print("DISNEY+ HOTSTAR REVIEWS - WORD FREQUENCY ANALYSIS")
-    print("All Sentiment Classes: Negatif, Netral, Positif")
+    print("ULASAN DISNEY+ HOTSTAR - ANALISIS FREKUENSI KATA")
+    print("Semua Kelas Sentimen: Negatif, Netral, Positif")
     print("=" * 80)
     
     # Load datasets
@@ -143,8 +143,8 @@ def main():
         df_play = pd.read_csv('data/processed/lex_labeled_review_play.csv')
         
         print(f"\n[OK] Data loaded successfully!")
-        print(f"   App Store: {len(df_app)} total reviews")
-        print(f"   Play Store: {len(df_play)} total reviews")
+        print(f"   App Store: {len(df_app)} total ulasan")
+        print(f"   Play Store: {len(df_play)} total ulasan")
         
     except FileNotFoundError as e:
         print(f"\n[ERROR] Could not find data files.")
@@ -166,14 +166,14 @@ def main():
     
     # Summary
     print("\n\n" + "=" * 80)
-    print("ANALYSIS COMPLETE")
+    print("ANALISIS SELESAI")
     print("=" * 80)
-    print("\n[OK] Word frequency analysis completed for:")
+    print("\n[OK] Analisis frekuensi kata selesai untuk:")
     print("   - App Store: Negatif, Netral, Positif")
     print("   - Play Store: Negatif, Netral, Positif")
-    print("\n[RESULTS] Results saved in:")
-    print("   - docs/analysis/WORD_FREQUENCY_ANALYSIS.md (documentation)")
-    print("\n[METHOD] Methodology:")
+    print("\n[RESULTS] Hasil disimpan di:")
+    print("   - docs/analysis/WORD_FREQUENCY_ANALYSIS.md (dokumentasi)")
+    print("\n[METHOD] Metodologi:")
     print("   - 5-stage preprocessing pipeline (translation -> stemming)")
     print("   - Counter-based frequency calculation")
     print("   - Sentiment-specific keyword extraction")

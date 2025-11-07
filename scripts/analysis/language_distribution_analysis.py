@@ -216,12 +216,12 @@ def main():
     # Load datasets
     print("\nLoading datasets...")
     try:
-        app_df = pd.read_csv('data/lex_labeled_review_app.csv')
-        play_df = pd.read_csv('data/lex_labeled_review_play.csv')
+        app_df = pd.read_csv('data/processed/lex_labeled_review_app.csv')
+        play_df = pd.read_csv('data/processed/lex_labeled_review_play.csv')
         print(f"✓ App Store: {len(app_df)} reviews loaded")
         print(f"✓ Play Store: {len(play_df)} reviews loaded")
     except FileNotFoundError as e:
-        print(f"❌ Error: {e}")
+        print(f"Error: {e}")
         print("Please ensure CSV files are in the 'data' folder.")
         return
     
@@ -258,18 +258,23 @@ def main():
     print("SAVING RESULTS")
     print(f"{'='*80}")
     
+    # Prepare output directory
+    import os
+    output_dir = 'outputs/results/language_dist/'
+    os.makedirs(output_dir, exist_ok=True)
+
     # Save annotated datasets
     app_df[['text', 'rating', 'detected_language']].to_csv(
-        'outputs/app_store_language_distribution.csv', 
+        os.path.join(output_dir, 'app_store_language_distribution.csv'), 
         index=False
     )
-    print("✓ Saved: outputs/app_store_language_distribution.csv")
+    print(f"✓ Saved: {os.path.join(output_dir, 'app_store_language_distribution.csv')}")
     
     play_df[['content', 'score', 'detected_language']].to_csv(
-        'outputs/play_store_language_distribution.csv', 
+        os.path.join(output_dir, 'play_store_language_distribution.csv'), 
         index=False
     )
-    print("✓ Saved: outputs/play_store_language_distribution.csv")
+    print(f"✓ Saved: {os.path.join(output_dir, 'play_store_language_distribution.csv')}")
     
     # Save summary statistics
     summary_df = pd.DataFrame({
@@ -304,8 +309,9 @@ def main():
         ]
     })
     
-    summary_df.to_csv('outputs/language_distribution_summary.csv', index=False)
-    print("✓ Saved: outputs/language_distribution_summary.csv")
+    summary_path = os.path.join(output_dir, 'language_distribution_summary.csv')
+    summary_df.to_csv(summary_path, index=False)
+    print(f"✓ Saved: {summary_path}")
     
     print(f"\n{'='*80}")
     print("ANALYSIS COMPLETE ✓")

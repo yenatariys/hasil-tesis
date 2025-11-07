@@ -23,7 +23,7 @@ import os
 # File paths
 APP_STORE_CSV = 'data/processed/lex_labeled_review_app.csv'
 PLAY_STORE_CSV = 'data/processed/lex_labeled_review_play.csv'
-OUTPUT_DIR = 'docs/analysis/wordclouds'
+OUTPUT_DIR = 'outputs/results/wordclouds/'
 
 # Indonesian stopwords (common connectors, pronouns, fillers)
 INDONESIAN_STOPWORDS = {
@@ -149,14 +149,14 @@ def process_sentiment_wordcloud(df, platform, sentiment, text_column='ulasan_ber
 def main():
     """Main execution function"""
     print("="*70)
-    print("WORDCLOUD GENERATION FROM WORD FREQUENCY ANALYSIS")
+    print("WORDCLOUD BERDASARKAN ANALISIS FREKUENSI KATA")
     print("="*70)
-    print("\nConfiguration:")
-    print(f"- Text Column: ulasan_bersih")
-    print(f"- Stopwords: {len(CUSTOM_STOPWORDS)} Indonesian words (after allowlist)")
-    print(f"- Business Terms Preserved: {len(BUSINESS_TERMS_ALLOWLIST)} keywords")
+    print("\nKonfigurasi:")
+    print(f"- Kolom Teks: ulasan_bersih")
+    print(f"- Stopwords: {len(CUSTOM_STOPWORDS)} kata bahasa Indonesia (setelah allowlist)")
+    print(f"- Istilah Bisnis yang Dipertahankan: {len(BUSINESS_TERMS_ALLOWLIST)} kata kunci")
     print(f"- Output: {OUTPUT_DIR}/")
-    print(f"- Max Words: 50 per wordcloud")
+    print(f"- Maksimal Kata: 50 per wordcloud")
     print("="*70)
     
     # Load datasets
@@ -181,14 +181,14 @@ def main():
     
     # Generate App Store wordclouds
     print("\n" + "="*70)
-    print("[STEP 2] Generating App Store Wordclouds")
+    print("[STEP 2] Menghasilkan Wordcloud App Store")
     print("="*70)
     for sentiment in sentiments:
         process_sentiment_wordcloud(df_app, 'App Store', sentiment)
     
     # Generate Play Store wordclouds
     print("\n" + "="*70)
-    print("[STEP 3] Generating Play Store Wordclouds")
+    print("[STEP 3] Menghasilkan Wordcloud Play Store")
     print("="*70)
     for sentiment in sentiments:
         process_sentiment_wordcloud(df_play, 'Play Store', sentiment)
@@ -196,15 +196,15 @@ def main():
     print("\n" + "="*70)
     print("[COMPLETE] All wordclouds generated successfully!")
     print("="*70)
-    print(f"\nOutput location: {os.path.abspath(OUTPUT_DIR)}/")
-    print("\nGenerated files:")
+    print(f"\nLokasi Penyimpanan: {os.path.abspath(OUTPUT_DIR)}/")
+    print("\nFile yang Dihasilkan:")
     for platform in ['appstore', 'playstore']:
         for sentiment in ['negatif', 'netral', 'positif']:
             print(f"  - wordcloud_{platform}_{sentiment}.png")
-    
-    print("\n[NOTE] These wordclouds use the same ulasan_bersih column as")
-    print("       word_frequency_analysis.py, ensuring perfect consistency")
-    print("       between frequency tables and visualizations.")
+
+    print("\n[NOTE] Wordclouds ini menggunakan kolom ulasan_bersih yang sama dengan")
+    print("       word_frequency_analysis.py, memastikan konsistensi yang sempurna")
+    print("       antara tabel frekuensi dan visualisasi.")
     print("="*70)
 
 if __name__ == "__main__":

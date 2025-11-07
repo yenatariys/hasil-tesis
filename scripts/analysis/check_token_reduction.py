@@ -1,43 +1,55 @@
+
 import pandas as pd
+import os
 
-# Load App Store data
-df_app = pd.read_csv(r'data\processed\lex_labeled_review_app.csv')
+# Prepare output directory and file
+output_dir = 'outputs/results/token_reduction/'
+os.makedirs(output_dir, exist_ok=True)
+output_path = os.path.join(output_dir, 'token_reduction_verification.txt')
 
-# Calculate token reduction
-initial_tokens = df_app['initial_token_count'].sum()
-after_stopword = df_app['token_count'].sum()
-reduction_pct = ((initial_tokens - after_stopword) / initial_tokens) * 100
+def write_and_print(text, file):
+	print(text)
+	file.write(text + '\n')
 
-print("=" * 60)
-print("APP STORE TOKEN ANALYSIS:")
-print("=" * 60)
-print(f"Total initial tokens: {initial_tokens:,}")
-print(f"Total after stopword removal: {after_stopword:,}")
-print(f"Token reduction: {reduction_pct:.1f}%")
-print(f"Average initial tokens per review: {df_app['initial_token_count'].mean():.1f}")
-print(f"Average after stopword: {df_app['token_count'].mean():.1f}")
-print(f"Column name for sentiment label: '{df_app.columns[-1]}'")
+with open(output_path, 'w', encoding='utf-8') as out:
+	# Load App Store data
+	df_app = pd.read_csv(r'data\processed\lex_labeled_review_app.csv')
 
-print("\n" + "=" * 60)
-print("PLAY STORE TOKEN ANALYSIS:")
-print("=" * 60)
+	# Calculate token reduction
+	initial_tokens = df_app['initial_token_count'].sum()
+	after_stopword = df_app['token_count'].sum()
+	reduction_pct = ((initial_tokens - after_stopword) / initial_tokens) * 100
 
-# Load Play Store data
-df_play = pd.read_csv(r'data\processed\lex_labeled_review_play.csv')
+	write_and_print("=" * 60, out)
+	write_and_print("ANALISIS TOKEN APP STORE:", out)
+	write_and_print("=" * 60, out)
+	write_and_print(f"Total token awal: {initial_tokens:,}", out)
+	write_and_print(f"Total setelah stopword removal: {after_stopword:,}", out)
+	write_and_print(f"Reduksi Token: {reduction_pct:.1f}%", out)
+	write_and_print(f"Rata-rata token awal per ulasan: {df_app['initial_token_count'].mean():.1f}", out)
+	write_and_print(f"Rata-rata setelah stopword removal: {df_app['token_count'].mean():.1f}", out)
+	write_and_print(f"Nama kolom untuk label sentimen: '{df_app.columns[-1]}'", out)
 
-initial_tokens_play = df_play['initial_token_count'].sum()
-after_stopword_play = df_play['token_count'].sum()
-reduction_pct_play = ((initial_tokens_play - after_stopword_play) / initial_tokens_play) * 100
+	write_and_print("\n" + "=" * 60, out)
+	write_and_print("ANALISIS TOKEN PLAY STORE:", out)
+	write_and_print("=" * 60, out)
 
-print(f"Total initial tokens: {initial_tokens_play:,}")
-print(f"Total after stopword removal: {after_stopword_play:,}")
-print(f"Token reduction: {reduction_pct_play:.1f}%")
-print(f"Average initial tokens per review: {df_play['initial_token_count'].mean():.1f}")
-print(f"Average after stopword: {df_play['token_count'].mean():.1f}")
-print(f"Column name for sentiment label: '{df_play.columns[-1]}'")
+	# Load Play Store data
+	df_play = pd.read_csv(r'data\processed\lex_labeled_review_play.csv')
 
-print("\n" + "=" * 60)
-print("VERIFY LABEL COLUMN NAMES:")
-print("=" * 60)
-print(f"App Store CSV columns: {', '.join(df_app.columns)}")
-print(f"Play Store CSV columns: {', '.join(df_play.columns)}")
+	initial_tokens_play = df_play['initial_token_count'].sum()
+	after_stopword_play = df_play['token_count'].sum()
+	reduction_pct_play = ((initial_tokens_play - after_stopword_play) / initial_tokens_play) * 100
+
+	write_and_print(f"Total token awal: {initial_tokens_play:,}", out)
+	write_and_print(f"Total setelah stopword removal: {after_stopword_play:,}", out)
+	write_and_print(f"Reduksi Token: {reduction_pct_play:.1f}%", out)
+	write_and_print(f"Rata-rata token awal per ulasan: {df_play['initial_token_count'].mean():.1f}", out)
+	write_and_print(f"Rata-rata setelah stopword removal: {df_play['token_count'].mean():.1f}", out)
+	write_and_print(f"Nama kolom untuk label sentimen: '{df_play.columns[-1]}'", out)
+
+	write_and_print("\n" + "=" * 60, out)
+	write_and_print("VERIFIKASI NAMA KOLOM LABEL:", out)
+	write_and_print("=" * 60, out)
+	write_and_print(f"Kolom CSV App Store: {', '.join(df_app.columns)}", out)
+	write_and_print(f"Kolom CSV Play Store: {', '.join(df_play.columns)}", out)
