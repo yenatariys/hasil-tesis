@@ -1757,122 +1757,72 @@ def prediction_playground() -> None:
 
 
 def model_performance_section(df: pd.DataFrame) -> None:
-    st.header("Model Performance Comparison")
-    st.markdown(
-        "> **Model insight:** Compare TF-IDF + SVM against IndoBERT embeddings + SVM to understand classification quality across feature representations."
-    )
+    # 1. Model Comparison Tab
+    st.subheader("Model Comparison: TF-IDF vs IndoBERT")
+    tab_compare, tab_tfidf, tab_bert = st.tabs(["Model Comparison", "SVM + TF-IDF", "SVM + IndoBERT"])
 
-    texts, labels = _prepare_text_and_labels(df)
-    label_tuple = tuple(labels)
-    if not _class_balance_ok(label_tuple):
-        st.info("Need at least two sentiment classes with three or more samples each to run model evaluations.")
-        return
+    with tab_compare:
+        st.markdown("""
+        **How to use this dashboard:**
+        1. Go to the **SVM + TF-IDF** tab and click **Train / Refresh TF-IDF Model** or load a saved pipeline.
+        2. Go to the **SVM + IndoBERT** tab and click **Train / Refresh IndoBERT Model** or load a saved pipeline.
+        3. Return here to compare the results side-by-side.
+        """)
+        tfidf_results = st.session_state.get("tfidf_results")
+        bert_results = st.session_state.get("bert_results")
+        if not tfidf_results or not bert_results:
+            st.warning("Both TF-IDF and IndoBERT results are required for comparison. Please train or load both models using the tabs above.")
+            if not tfidf_results:
+                st.info("Go to the **SVM + TF-IDF** tab and train or load a TF-IDF model.")
+            if not bert_results:
+                st.info("Go to the **SVM + IndoBERT** tab and train or load an IndoBERT model.")
+        else:
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("### TF-IDF Results")
+                st.write(f"**Best F1 (macro):** {tfidf_results.get('best_score', float('nan')):.3f}")
+                st.write(f"**Best Params:** {tfidf_results.get('best_params', {})}")
+                if "classification_report" in tfidf_results:
+                    st.subheader("Classification Report")
+                    st.dataframe(_format_classification_report(tfidf_results["classification_report"]), use_container_width=True)
+                if "confusion_matrix" in tfidf_results and "labels" in tfidf_results:
+                    st.subheader("Confusion Matrix")
+                    cm_array = np.asarray(tfidf_results["confusion_matrix"])
+                    _plot_confusion_matrix(cm_array, list(tfidf_results["labels"]), "TF-IDF Model")
+            with col2:
+                st.markdown("### IndoBERT Results")
+                st.write(f"**Best F1 (macro):** {bert_results.get('best_score', float('nan')):.3f}")
+                st.write(f"**Best Params:** {bert_results.get('best_params', {})}")
+                if "classification_report" in bert_results:
+                    st.subheader("Classification Report")
+                    st.dataframe(_format_classification_report(bert_results["classification_report"]), use_container_width=True)
+                if "confusion_matrix" in bert_results and "labels" in bert_results:
+                    st.subheader("Confusion Matrix")
+                    cm_array = np.asarray(bert_results["confusion_matrix"])
+                    _plot_confusion_matrix(cm_array, list(bert_results["labels"]), "IndoBERT Model")
 
-    text_tuple = tuple(texts)
-    data_signature = hash((text_tuple, label_tuple))
-    if st.session_state.get("model_data_signature") != data_signature:
-        st.session_state.pop("tfidf_results", None)
-        st.session_state.pop("tfidf_results_loaded", None)
-        st.session_state.pop("tfidf_results_trained", None)
-        st.session_state.pop("tfidf_loaded_label", None)
-        st.session_state.pop("tfidf_trained_label", None)
-        st.session_state.pop("tfidf_active_source", None)
-        st.session_state.pop("tfidf_results_repository", None)
-        st.session_state.pop("tfidf_selected_loaded_label", None)
-        st.session_state.pop("bert_results", None)
-        st.session_state.pop("bert_results_loaded", None)
-        st.session_state.pop("bert_results_trained", None)
-        st.session_state.pop("bert_loaded_label", None)
-        st.session_state.pop("bert_trained_label", None)
-        st.session_state.pop("bert_loaded_config", None)
-        st.session_state.pop("bert_trained_config", None)
-        st.session_state.pop("bert_active_source", None)
-        st.session_state.pop("bert_results_repository", None)
-        st.session_state.pop("bert_selected_loaded_label", None)
-        st.session_state["model_data_signature"] = data_signature
+            # Fix indentation for normalization block
+            if isinstance(grid, dict):
+                if "best_score" in grid:
+                    normalized["best_score"] = grid.get("best_score")
+                if "best_params" in grid:
+                    normalized["best_params"] = grid.get("best_params")
 
-    _autoload_workspace_models()
-
-    with st.expander("Import precomputed model results (JSON)", expanded=False):
-        st.write(
-            "Upload JSON files exported from the notebooks containing precomputed CV / report results to avoid retraining heavy models."
-        )
-        tfidf_file = st.file_uploader("TF-IDF results (JSON)", type=["json"], key="upload_tfidf")
-        bert_file = st.file_uploader("IndoBERT results (JSON)", type=["json"], key="upload_bert")
-        prefer_import = st.checkbox("Prefer imported results over retraining when present", value=True)
-
-        if tfidf_file is not None:
-            try:
-                tfidf_payload = json.load(tfidf_file)
-                if isinstance(tfidf_payload, dict) and "best_score" in tfidf_payload:
-                    label = _format_result_label("tfidf", tfidf_file.name)
-                    _store_loaded_result("tfidf", label, tfidf_payload)
-                    st.success(f"Loaded TF-IDF results: {label}")
-                else:
-                    st.error("Invalid TF-IDF JSON structure: expected a dict containing 'best_score'.")
-            except Exception as exc:  # noqa: BLE001
-                st.error(f"Failed to parse TF-IDF JSON: {exc}")
-
-        if bert_file is not None:
-            try:
-                bert_payload = json.load(bert_file)
-                if isinstance(bert_payload, dict) and "best_score" in bert_payload:
-                    label = _format_result_label("bert", bert_file.name)
-                    _store_loaded_result("bert", label, bert_payload)
-                    st.session_state["bert_loaded_config"] = bert_payload.get("best_params", None)
-                    st.success(f"Loaded IndoBERT results: {label}")
-                else:
-                    st.error("Invalid IndoBERT JSON structure: expected a dict containing 'best_score'.")
-            except Exception as exc:  # noqa: BLE001
-                st.error(f"Failed to parse IndoBERT JSON: {exc}")
-
-        workspace_candidates = _discover_exported_jsons()
-
-        if workspace_candidates:
-            st.markdown("**Workspace: detected exported JSON files**")
-            for path in workspace_candidates:
-                cols = st.columns([3, 1, 1])
-                cols[0].write(Path(path).relative_to(REPO_ROOT))
-                if cols[1].button("Preview", key=f"preview_ws_{path.stem}"):
-                    try:
-                        with open(path, "r", encoding="utf-8") as fh:
-                            content = json.load(fh)
-                        st.json(content)
-                    except Exception as exc:  # noqa: BLE001
-                        st.error(f"Failed to read {path.name}: {exc}")
-
-                if cols[2].button("Load into dashboard", key=f"load_ws_{path.stem}"):
-                    try:
-                        with open(path, "r", encoding="utf-8") as fh:
-                            content = json.load(fh)
-
-                        def _normalize_export(obj: dict) -> dict:
-                            if isinstance(obj, dict) and ("best_score" in obj or "classification_report" in obj):
-                                return obj
-
-                            normalized: Dict[str, Any] = {}
-                            grid = obj.get("grid") if isinstance(obj, dict) else None
-                            if isinstance(grid, dict):
-                                if "best_score" in grid:
-                                    normalized["best_score"] = grid.get("best_score")
-                                if "best_params" in grid:
-                                    normalized["best_params"] = grid.get("best_params")
-
-                                cv = grid.get("cv_results")
-                                try:
-                                    if isinstance(cv, dict):
-                                        cv_df = pd.DataFrame(cv)
-                                        if "param_tfidf__ngram_range" in cv_df.columns:
-                                            ngram_summary = (
-                                                cv_df.groupby(cv_df["param_tfidf__ngram_range"].astype(str))["mean_test_score"]
-                                                .max()
-                                                .reset_index()
-                                                .rename(
-                                                    columns={
-                                                        "param_tfidf__ngram_range": "ngram",
-                                                        "mean_test_score": "f1_macro",
-                                                    }
-                                                )
+                cv = grid.get("cv_results")
+                try:
+                    if isinstance(cv, dict):
+                        cv_df = pd.DataFrame(cv)
+                        if "param_tfidf__ngram_range" in cv_df.columns:
+                            ngram_summary = (
+                                cv_df.groupby(cv_df["param_tfidf__ngram_range"].astype(str))["mean_test_score"]
+                                .max()
+                                .reset_index()
+                                .rename(
+                                    columns={
+                                        "param_tfidf__ngram_range": "ngram",
+                                        "mean_test_score": "f1_macro",
+                                    }
+                                )
                                             )
                                             normalized["ngram_summary"] = ngram_summary
 
@@ -1933,64 +1883,33 @@ def model_performance_section(df: pd.DataFrame) -> None:
 
         st.session_state["prefer_import"] = prefer_import
 
-    with st.expander("Load saved scikit-learn pipelines (joblib/pkl)", expanded=False):
-        if joblib is None:
-            st.info("Install the `joblib` package to enable loading persisted pipelines.")
-        else:
-            registry = _get_pipeline_registry()
-            workspace_pipelines = _discover_saved_pipelines()
-            if workspace_pipelines:
-                st.markdown("**Workspace: detected saved pipelines**")
-                for path in workspace_pipelines:
-                    cols = st.columns([3, 1])
-                    cols[0].write(Path(path).relative_to(REPO_ROOT))
-                    if cols[1].button("Load", key=f"load_pipeline_{path.stem}"):
-                        try:
-                            pipeline_obj = joblib.load(path)
-                            slot = _infer_pipeline_slot(path.name, pipeline_obj)
-                            registry = _get_pipeline_registry()
-                            registry[slot][path.name] = pipeline_obj
-                            st.session_state["uploaded_pipelines"] = registry
-                            st.success(f"Loaded `{path.name}` ({slot}) for inference.")
-                        except Exception as exc:  # noqa: BLE001
-                            st.error(f"Failed to load {path.name}: {exc}")
-
-            uploaded = st.file_uploader(
-                "Upload a saved pipeline for inference",
-                type=["pkl", "joblib"],
-                key="uploaded_pipeline_file",
-                help="Upload a scikit-learn Pipeline (e.g., TF-IDF + SVM) exported with joblib.",
-            )
-
-            if uploaded is not None:
-                label = _label_saved_pipeline(Path(uploaded.name))
-                try:
-                    pipeline_obj = joblib.load(uploaded)
-                    slot = _infer_pipeline_slot(uploaded.name, pipeline_obj)
-                    registry = _get_pipeline_registry()
-                    if label not in registry[slot]:
-                        registry[slot][label] = pipeline_obj
-                        st.session_state["uploaded_pipelines"] = registry
-                        st.success(f"Loaded `{label}` ({slot}) for interactive predictions.")
-                    else:
-                        st.info(f"Pipeline `{label}` is already loaded under the {slot} bucket.")
-                except Exception as exc:  # noqa: BLE001
-                    st.error(f"Failed to load pipeline: {exc}")
-
-            registry = _get_pipeline_registry()
-            summary_bits: List[str] = []
-            for bucket, entries in registry.items():
-                if entries:
-                    summary_bits.append(f"{bucket}: {', '.join(entries.keys())}")
-            if summary_bits:
-                st.caption("Available pipelines → " + " | ".join(summary_bits))
-                if st.button("Clear uploaded pipelines", key="clear_uploaded_pipelines"):
-                    st.session_state["uploaded_pipelines"] = {"tfidf": {}, "bert": {}, "unknown": {}}
-                    st.info("Cleared uploaded pipelines.")
 
     tfidf_tab, bert_tab = st.tabs(["SVM + TF-IDF", "SVM + IndoBERT"])
 
     with tfidf_tab:
+        with st.expander("Load saved scikit-learn pipelines (joblib/pkl) — TF-IDF only", expanded=False):
+            registry = _get_pipeline_registry()
+            tfidf_pipelines = registry.get("tfidf", {})
+            if not tfidf_pipelines:
+                st.info("No TF-IDF pipelines found.")
+            else:
+                st.markdown("**TF-IDF pipelines available for inference:**")
+                pipeline_names = list(tfidf_pipelines.keys())
+                selected_pipeline = st.selectbox("Select a TF-IDF pipeline to use for prediction", pipeline_names, key="selectbox_tfidf_pipeline")
+                input_text = st.text_area("Enter text for prediction", value="", max_chars=500)
+                if st.button("Predict with selected TF-IDF pipeline"):
+                    pipeline_obj = tfidf_pipelines[selected_pipeline]
+                    try:
+                        pred = pipeline_obj.predict([input_text])[0]
+                        st.success(f"Prediction: {pred}")
+                    except Exception as exc:
+                        st.error(f"Failed to predict: {exc}")
+                for name in pipeline_names:
+                    st.write(f"- {name}")
+            if st.button("Clear TF-IDF pipelines", key="clear_tfidf_pipelines"):
+                registry["tfidf"] = {}
+                st.session_state["uploaded_pipelines"] = registry
+                st.info("Cleared TF-IDF pipelines.")
         st.markdown("Run hyperparameter search across n-grams and C values for TF-IDF features.")
         st.caption(
             "The app uses `LinearSVC`, which applies a linear kernel under the hood. "
@@ -2100,10 +2019,29 @@ def model_performance_section(df: pd.DataFrame) -> None:
             st.caption("TF-IDF pipelines available for inference: " + ", ".join(tfidf_registry.keys()))
 
     with bert_tab:
-        if AutoTokenizer is None or AutoModel is None or torch is None:
-            st.warning("Install transformers and torch to evaluate the IndoBERT-based model.")
-            return
-
+        with st.expander("Load saved scikit-learn pipelines (joblib/pkl) — IndoBERT only", expanded=False):
+            registry = _get_pipeline_registry()
+            bert_pipelines = registry.get("bert", {})
+            if not bert_pipelines:
+                st.info("No IndoBERT pipelines found.")
+            else:
+                st.markdown("**IndoBERT pipelines available for inference:**")
+                pipeline_names = list(bert_pipelines.keys())
+                selected_pipeline = st.selectbox("Select an IndoBERT pipeline to use for prediction", pipeline_names, key="selectbox_bert_pipeline")
+                input_text = st.text_area("Enter text for IndoBERT prediction", value="", max_chars=500, key=f"indobert_input_text_{selected_pipeline}")
+                if st.button("Predict with selected IndoBERT pipeline", key=f"predict_bert_{selected_pipeline}"):
+                    pipeline_obj = bert_pipelines[selected_pipeline]
+                    try:
+                        pred = pipeline_obj.predict([input_text])[0]
+                        st.success(f"Prediction: {pred}")
+                    except Exception as exc:
+                        st.error(f"Failed to predict: {exc}")
+                for name in pipeline_names:
+                    st.write(f"- {name}")
+            if st.button("Clear IndoBERT pipelines", key=f"clear_bert_pipelines_{selected_pipeline}"):
+                registry["bert"] = {}
+                st.session_state["uploaded_pipelines"] = registry
+                st.info("Cleared IndoBERT pipelines.")
         st.markdown("Fine-tune C over CLS embeddings extracted from IndoBERT.")
         model_name = st.selectbox(
             "IndoBERT checkpoint",
@@ -2113,25 +2051,7 @@ def model_performance_section(df: pd.DataFrame) -> None:
         max_length = st.slider("Max token length", min_value=64, max_value=256, value=128, step=32)
         batch_size = st.selectbox("Batch size", options=[8, 16, 32], index=1)
 
-        bert_config_tuple = (model_name, max_length, batch_size)
-
-        bert_trained_config = st.session_state.get("bert_trained_config")
-        if bert_trained_config is not None:
-            trained_tuple = (
-                bert_trained_config.get("model_name"),
-                bert_trained_config.get("max_length"),
-                bert_trained_config.get("batch_size"),
-            )
-            if trained_tuple != bert_config_tuple:
-                st.session_state.pop("bert_results_trained", None)
-                st.session_state.pop("bert_trained_config", None)
-                st.session_state.pop("bert_trained_label", None)
-                if st.session_state.get("bert_active_source") == "trained":
-                    st.session_state["bert_active_source"] = "loaded" if st.session_state.get("bert_results_loaded") else None
-
         bert_trained = st.session_state.get("bert_results_trained")
-        prefer_import = st.session_state.get("prefer_import", True)
-
         bert_options: List[str] = []
         if bert_trained is not None:
             bert_options.append("Trained results")
@@ -2218,9 +2138,30 @@ def model_performance_section(df: pd.DataFrame) -> None:
         else:
             st.info("Configure parameters and train the IndoBERT model to view evaluation metrics.")
 
-        bert_registry = _get_pipeline_registry().get("bert", {})
-        if bert_registry:
-            st.caption("IndoBERT pipelines available for inference: " + ", ".join(bert_registry.keys()))
+        # Existing pipeline loader UI
+        with st.expander("Load saved scikit-learn pipelines (joblib/pkl) — IndoBERT only", expanded=False):
+            registry = _get_pipeline_registry()
+            bert_pipelines = registry.get("bert", {})
+            if not bert_pipelines:
+                st.info("No IndoBERT pipelines found.")
+            else:
+                st.markdown("**IndoBERT pipelines available for inference:**")
+                pipeline_names = list(bert_pipelines.keys())
+                selected_pipeline = st.selectbox("Select an IndoBERT pipeline to use for prediction", pipeline_names)
+                input_text = st.text_area("Enter text for IndoBERT prediction", value="", max_chars=500, key="indobert_input_text")
+                if st.button("Predict with selected IndoBERT pipeline"):
+                    pipeline_obj = bert_pipelines[selected_pipeline]
+                    try:
+                        pred = pipeline_obj.predict([input_text])[0]
+                        st.success(f"Prediction: {pred}")
+                    except Exception as exc:
+                        st.error(f"Failed to predict: {exc}")
+                for name in pipeline_names:
+                    st.write(f"- {name}")
+            if st.button("Clear IndoBERT pipelines", key="clear_bert_pipelines"):
+                registry["bert"] = {}
+                st.session_state["uploaded_pipelines"] = registry
+                st.info("Cleared IndoBERT pipelines.")
 
 def _parse_review_dates(series: pd.Series) -> pd.Series:
     """Parse date strings that may mix date-only and timestamp formats."""
@@ -2337,4 +2278,9 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as exc:
+        import traceback
+        st.error(f"Dashboard failed to start: {exc}")
+        st.code(traceback.format_exc(), language="python")
