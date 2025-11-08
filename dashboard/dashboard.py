@@ -1801,88 +1801,6 @@ def model_performance_section(df: pd.DataFrame) -> None:
                     cm_array = np.asarray(bert_results["confusion_matrix"])
                     _plot_confusion_matrix(cm_array, list(bert_results["labels"]), "IndoBERT Model")
 
-            # Fix indentation for normalization block
-            if isinstance(grid, dict):
-                if "best_score" in grid:
-                    normalized["best_score"] = grid.get("best_score")
-                if "best_params" in grid:
-                    normalized["best_params"] = grid.get("best_params")
-
-                cv = grid.get("cv_results")
-                try:
-                    if isinstance(cv, dict):
-                        cv_df = pd.DataFrame(cv)
-                        if "param_tfidf__ngram_range" in cv_df.columns:
-                            ngram_summary = (
-                                cv_df.groupby(cv_df["param_tfidf__ngram_range"].astype(str))["mean_test_score"]
-                                .max()
-                                .reset_index()
-                                .rename(
-                                    columns={
-                                        "param_tfidf__ngram_range": "ngram",
-                                        "mean_test_score": "f1_macro",
-                                    }
-                                )
-                                            )
-                                            normalized["ngram_summary"] = ngram_summary
-
-                                        if "param_C" in cv_df.columns:
-                                            c_search = cv_df[["param_C", "mean_test_score"]].rename(
-                                                columns={"param_C": "C", "mean_test_score": "f1_macro"}
-                                            )
-                                            normalized["c_search"] = c_search
-
-                                        normalized.setdefault("cv_results", cv)
-                                except Exception:
-                                    normalized.setdefault("cv_results", cv)
-
-                            if isinstance(obj, dict):
-                                if "classification_report" in obj:
-                                    normalized["classification_report"] = obj.get("classification_report")
-                                if "confusion_matrix" in obj:
-                                    normalized["confusion_matrix"] = obj.get("confusion_matrix")
-
-                            return normalized if normalized else obj
-
-                        norm = _normalize_export(content)
-
-                        assigned = False
-                        if isinstance(norm, dict):
-                            best_params = norm.get("best_params", {})
-                            if "ngram_summary" in norm or any(
-                                key.startswith("tfidf") or "ngram" in str(key).lower() for key in best_params.keys()
-                            ):
-                                label = _format_result_label("tfidf", path.name)
-                                _store_loaded_result("tfidf", label, norm)
-                                st.success(f"Loaded TF-IDF results: {label}")
-                                assigned = True
-                            elif "c_search" in norm and isinstance(best_params, dict) and best_params.get("model_name"):
-                                label = _format_result_label("bert", path.name)
-                                _store_loaded_result("bert", label, norm)
-                                st.session_state["bert_loaded_config"] = best_params
-                                st.success(f"Loaded IndoBERT results: {label}")
-                                assigned = True
-                            elif "c_search" in norm or (
-                                isinstance(norm.get("cv_results"), dict)
-                                and any(col.startswith("param_kernel") for col in norm["cv_results"].keys())
-                            ):
-                                label = _format_result_label("tfidf", path.name)
-                                _store_loaded_result("tfidf", label, norm)
-                                st.success(f"Loaded TF-IDF results: {label}")
-                                assigned = True
-
-                        if not assigned:
-                            label = _format_result_label("tfidf", path.name)
-                            _store_loaded_result("tfidf", label, norm)
-                            st.info(
-                                f"Loaded {path.name} into TF-IDF slot (fallback). Use retrain buttons to recompute if needed."
-                            )
-
-                    except Exception as exc:  # noqa: BLE001
-                        st.error(f"Failed to load {path.name}: {exc}")
-
-        st.session_state["prefer_import"] = prefer_import
-
 
     tfidf_tab, bert_tab = st.tabs(["SVM + TF-IDF", "SVM + IndoBERT"])
 
@@ -1946,7 +1864,8 @@ def model_performance_section(df: pd.DataFrame) -> None:
         else:
             if st.button("Train / Refresh TF-IDF Model", key="train_tfidf"):
                 with st.spinner("Training Linear SVM with TF-IDF features..."):
-                    trained = _train_tfidf_svm(text_tuple, label_tuple)
+                    texts, labels = _prepare_text_and_labels(df)
+                    trained = _train_tfidf_svm(tuple(texts), tuple(labels))
                 st.session_state["tfidf_results_trained"] = trained
                 st.session_state["tfidf_results"] = trained
                 st.session_state["tfidf_trained_label"] = f"Trained on {pd.Timestamp.now():%Y-%m-%d %H:%M}"
