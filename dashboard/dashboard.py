@@ -1609,6 +1609,7 @@ def _compute_bert_embeddings(
     max_length: int = 128,
     batch_size: int = 16,
 ) -> np.ndarray:
+    _ensure_transformers_imported()
     tokenizer, model = _load_transformer(model_name)
     device = torch.device("cuda" if torch is not None and torch.cuda.is_available() else "cpu")
     model = model.to(device)
