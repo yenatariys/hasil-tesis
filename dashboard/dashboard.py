@@ -1957,10 +1957,10 @@ def model_performance_section(df: pd.DataFrame) -> None:
                         st.error(f"Failed to predict: {exc}")
                 for name in pipeline_names:
                     st.write(f"- {name}")
-            if st.button("Clear IndoBERT pipelines", key=f"clear_bert_pipelines_{selected_pipeline}"):
-                registry["bert"] = {}
-                st.session_state["uploaded_pipelines"] = registry
-                st.info("Cleared IndoBERT pipelines.")
+                if st.button("Clear IndoBERT pipelines", key=f"clear_bert_pipelines_{selected_pipeline}"):
+                    registry["bert"] = {}
+                    st.session_state["uploaded_pipelines"] = registry
+                    st.info("Cleared IndoBERT pipelines.")
         st.markdown("Fine-tune C over CLS embeddings extracted from IndoBERT.")
         model_name = st.selectbox(
             "IndoBERT checkpoint",
