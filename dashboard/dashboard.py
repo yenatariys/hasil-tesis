@@ -368,7 +368,26 @@ def _autoload_workspace_models() -> None:
                 continue
             try:
                 pipeline_obj = joblib.load(path)
-                slot = _infer_pipeline_slot(path.name, pipeline_obj)
+                # Improved IndoBERT detection
+                slot = "unknown"
+                # Check for IndoBERT by step names or class names
+                if hasattr(pipeline_obj, "named_steps"):
+                    step_names = list(pipeline_obj.named_steps.keys())
+                    if any("bert" in step.lower() or "transformer" in step.lower() for step in step_names):
+                        slot = "bert"
+                elif hasattr(pipeline_obj, "steps"):
+                    step_names = [str(s[0]).lower() for s in pipeline_obj.steps]
+                    if any("bert" in step or "transformer" in step for step in step_names):
+                        slot = "bert"
+                # Fallback: check class name
+                if slot == "unknown" and "bert" in type(pipeline_obj).__name__.lower():
+                    slot = "bert"
+                # If filename contains bert, also treat as IndoBERT
+                if slot == "unknown" and "bert" in path.name.lower():
+                    slot = "bert"
+                # If still unknown, use _infer_pipeline_slot
+                if slot == "unknown":
+                    slot = _infer_pipeline_slot(path.name, pipeline_obj)
                 registry[slot][label] = pipeline_obj
                 st.session_state["uploaded_pipelines"] = registry
                 loaded_any = True
@@ -2000,6 +2019,9 @@ def model_performance_section(df: pd.DataFrame) -> None:
             trigger_key = f"train_bert_{model_name}_{max_length}_{batch_size}"
             if st.button("Train / Refresh IndoBERT Model", key=trigger_key):
                 with st.spinner("Embedding texts with IndoBERT and training Linear SVM..."):
+                    texts, labels = _prepare_text_and_labels(df)
+                    text_tuple = tuple(texts)
+                    label_tuple = tuple(labels)
                     trained = _train_bert_svm(
                         text_tuple,
                         label_tuple,
